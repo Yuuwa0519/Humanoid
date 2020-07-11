@@ -18,7 +18,7 @@ local UIController = {}
 function UIController:FPSCheck()
     local last = time()
     RunService.Heartbeat:Connect(function()
-        FPS.Text.Text = "FPS: " .. tostring(1 / (time() - last))
+        FPS.Text.Text = "FPS: " .. tostring(math.floor(1 / (time() - last)))
         last = time()
     end)
 end
@@ -33,6 +33,7 @@ function UIController:SpawnButton()
     Spawn.Text.MouseButton1Down:Connect(function()
         self.Services.HumService.Spawn:Fire()
     end)
+    self.Services.HumService.Spawn:Fire()
 end
 
 

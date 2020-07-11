@@ -135,10 +135,6 @@ function Humanoid:MoveTo(TargetPos, timeOut)
 	self.GoalPos = TargetPos
 	self:Move(direction)
 
-	if (self._Maid.MoveToEvent) then
-		self._Maid.MoveToEvent:Disconnect()
-	end
-
 	self._Maid.MoveToEvent = RunService.Heartbeat:Connect(function()
 		local dist = (TargetPos - self.Base.Position).Magnitude
 		local deltaTime = (time() - startTim)
@@ -200,6 +196,7 @@ function Humanoid:Activate()
 
 	self.Mass = self:GetMass()
 	self.LastDelta  = 0
+
 	self._Maid:GiveTask(RunService.Heartbeat:Connect(function()
 		self:Calculate()
 	end))
