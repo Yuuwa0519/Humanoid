@@ -38,6 +38,10 @@ function HumService:Start()
 
         newHum:Activate()
 
+        --Humanoid Vars
+        local lastPos = newHum.Base.Position
+        local lastJumpCheck = time()
+
         while (true) do
             
             -- newHum:MoveTo(Vector3.new(math.random(-100,100), math.random(0, 20), math.random(-100,100)),5)
@@ -67,6 +71,14 @@ function HumService:Start()
                 end
             end
 
+            if ((newHum.Base.Position - lastPos).Magnitude < 2 and time() - lastJumpCheck > 5) then
+                print("Jump")
+                newHum:Jump()
+
+                lastJumpCheck = time()
+            end
+
+            lastPos = newHum.Base.Position
             RunService.Heartbeat:Wait()
         end
     end)

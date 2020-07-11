@@ -38,10 +38,15 @@ function Humanoid.new(Character)
 	local RotAttach = Instance.new("Attachment")
 
 	local VF = Instance.new("VectorForce")
+	local JF = Instance.new("VectorForce")
 	local AO = Instance.new("AlignOrientation")
 
 	VF.Attachment0 = BaseAttach
 	VF.ApplyAtCenterOfMass = true
+
+	JF.Attachment0 = BaseAttach
+	JF.ApplyAtCenterOfMass = true
+	JF.Force = Vector3.new()
 
 	AO.Attachment0 = BaseAttach
 	AO.Attachment1 = RotAttach
@@ -51,6 +56,7 @@ function Humanoid.new(Character)
 	BaseAttach.Parent = HumBase
 	RotAttach.Parent = workspace.Terrain
 	VF.Parent = HumBase
+	JF.Parent = HumBase
 	AO.Parent = HumBase
 	-- BG.Parent = HumBase
 
@@ -60,6 +66,7 @@ function Humanoid.new(Character)
 		BaseAttach = BaseAttach;
 		RotAttach = RotAttach;
 		VF = VF;
+		JF = JF;
 		AO = AO;
 
 		--Physic Component
@@ -82,6 +89,14 @@ function Humanoid.new(Character)
 	}, Humanoid)
 
 	return self
+end
+
+function Humanoid:Jump()
+	local jumpPower = Vector3.new(0, self:GetMass(true) * 1.5, 0)
+
+	self.JF.Force = jumpPower
+	wait(.5)
+	self.JF.Force = Vector3.new()
 end
 
 function Humanoid:Move(V3)
