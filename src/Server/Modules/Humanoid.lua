@@ -26,7 +26,8 @@ Humanoid.__index = Humanoid
 function Humanoid.new(Character)
 	--[[Components
 		VectorForce;
-		BodyGyro;
+		(Not Used)BodyGyro; --Differed Due to Performance Problems
+		AllignOrientation;
 		AnimationController;
 	]]
 
