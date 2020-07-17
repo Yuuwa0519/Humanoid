@@ -16,10 +16,8 @@ local Spawn
 local UIController = {}
 
 function UIController:FPSCheck()
-    local last = time()
-    RunService.Heartbeat:Connect(function()
-        FPS.Text.Text = "FPS: " .. tostring(math.floor(1 / (time() - last)))
-        last = time()
+    RunService.Heartbeat:Connect(function(delta)
+        FPS.Text.Text = "FPS: " .. tostring(math.floor(1 / delta))
     end)
 end
 

@@ -93,10 +93,10 @@ function Humanoid.new(Character)
 end
 
 function Humanoid:Jump()
-	local jumpPower = Vector3.new(0, self:GetMass(true) * 1.5, 0)
+	local jumpPower = Vector3.new(0, self:GetMass() * 3000, 0)
 
 	self.JF.Force = jumpPower
-	wait(.5)
+	RunService.Heartbeat:Wait()
 	self.JF.Force = Vector3.new()
 end
 
@@ -170,7 +170,7 @@ function Humanoid:Calculate()
 	end
 
 
-	local Force = self.Mass * (self.Direction * self.WalkSpeed)
+	local Force = self:GetMass() * (self.Direction * self.WalkSpeed)
 	local Drag = vel * self.DragForce
 	local FinalForce = Force - Drag
 
@@ -178,14 +178,7 @@ function Humanoid:Calculate()
 end
 
 function Humanoid:GetMass(considerGravity)
-	local mass = 0
-	for _, obj in pairs(self.Char:GetDescendants()) do
-		if (obj:IsA("BasePart")) then
-			mass = mass + obj:GetMass()
-		end
-	end
-
-	return considerGravity and mass * workspace.Gravity or mass
+	return considerGravity and self.Base:GetMass() * workspace.Gravity or self.Base:GetMass()
 end
 
 function Humanoid:Activate()
@@ -195,7 +188,12 @@ function Humanoid:Activate()
 		self.VF.RelativeTo = Enum.ActuatorRelativeTo.World
 	end
 
-	self.Mass = self:GetMass()
+	for _, obj in pairs(self.Char:GetDescendants()) do
+		if (obj:IsA("BasePart") and obj ~= self.Base) then
+			obj.Massless = true
+		end
+	end
+
 	self.LastDelta  = 0
 
 	self._Maid:GiveTask(RunService.Heartbeat:Connect(function()
