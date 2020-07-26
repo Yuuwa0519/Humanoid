@@ -73,8 +73,8 @@ function Humanoid.new(Character)
 		--Physic Component
 		Direction = Vector3.new(); --Move Direction
 		GoalPos = Vector3.new(); --where to look if AutoRotate
-		DragForce = 30;
-		WalkSpeed = 70;
+		DragForce = 20;
+		WalkSpeed = 120;
 		AutoRotate = true; 
 		Mass = 0;
 
@@ -115,6 +115,7 @@ function Humanoid:Move(V3)
 
 	normalized = Vector3.new(X, Y, Z)
 
+	--When Autorotate is Enabled, Move Vector Becomes Lookvector (Moves Forward)
 	if (self.AutoRotate) then 
 		newV3 = Vector3.new(0, 0, -1)
 	else
@@ -146,6 +147,37 @@ function Humanoid:MoveTo(TargetPos, timeOut)
 			self.MoveToFinished:Fire()
 		end
 	end)
+end
+
+function Humanoid:Face(look) 
+	--Manually Face Obj 
+	if (self.AutoRotate) then 
+		warn("Humanoid:Face() Cannot be Used while Humanoid.Autorotate is True")
+		return 
+	end
+
+	if (typeof(UnitVec) == "Vector3") then 
+		local right = look:Cross(Vector3.new(0,1,0))
+		local up = right:Cross(look)
+
+		self.RotAttach.WorldCFrame = CFrame.fromMatrix(look, right, up)
+	else 
+		warn("Humanoid:Face() Requires Unit Vector")
+	end
+end
+
+function Humanoid:FaceTo(TargCF)
+	if (self.AutoRotate) then 
+		warn("Humanoid:FaceTo() Cannot be Used while Humanoid.Autorotate is True")
+		return 
+	end
+
+	if (typeof(TargCF) == "CFrame") then 
+		local unitVec = (TargCF.Position - self.BaseAttach.WorldCFrame.Position).Magnitude 
+		self:Face(unitVec)
+	else
+		warn("Humanoid:FaceTo() Requires Target CFrame")
+	end
 end
 
 function Humanoid:Calculate()
