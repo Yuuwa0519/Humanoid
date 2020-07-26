@@ -62,6 +62,13 @@ function HumService:SpawnHum()
             if (char) then
                 newHum:MoveTo(char.PrimaryPart.Position, 1)
             end
+        elseif (newHum.ReachedTarget) then
+            wait(10)
+            local X = math.random(-50, 50)
+            local Y = math.random(-5, 5)
+            local Z = math.random(-50, 50)
+
+            newHum:MoveTo(newHum.Base.Position + Vector3.new(X, Y, Z))
         end
 
         if ((newHum.Base.Position - lastPos).Magnitude < 2 and time() - lastJumpCheck > 5) then
@@ -94,6 +101,7 @@ function HumService:Start()
     self:ConnectClientEvent("Spawn", function()
         self:SpawnHum()
     end)
+    self:SpawnHum()
 end
 
 function HumService:Init()

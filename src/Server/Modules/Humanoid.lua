@@ -1,6 +1,6 @@
 -- Humanoid
 -- Yuuwa0519
--- July 11, 2020
+-- July 11, 2020 (Updated on July 26th, 2020)
 
 --Service
 local RunService = game:GetService("RunService")
@@ -20,6 +20,16 @@ local function fSpawn(func, ...) --From Nevermore Engine by Quenty, Modified by 
 	bindable:Destroy()
 end
 
+local function debugPrint(isWarn, ...)
+	if (not Debug) then return end 
+
+	if (isWarn) then
+		warn(...)
+	else 
+		print(...) 
+	end
+end
+
 local Humanoid = {}
 Humanoid.__index = Humanoid
 
@@ -28,7 +38,7 @@ function Humanoid.new(Character)
 		VectorForce;
 		(Not Used)BodyGyro; --Differed Due to Performance Problems
 		AllignOrientation;
-		AnimationController;
+		AnimationController; --Differed Due to Switching to Client-Based
 	]]
 
 	local HumBase = Character:WaitForChild("HumanoidBase")
@@ -75,8 +85,13 @@ function Humanoid.new(Character)
 		GoalPos = Vector3.new(); --where to look if AutoRotate
 		DragForce = 20;
 		WalkSpeed = 120;
-		AutoRotate = true; 
 		Mass = 0;
+
+		AutoRotate = true; 
+		TargetReachDist = 3;		
+
+		--State 
+		ReachedTarget = true;
 
 		--Humanoid Components
 		Health = 100;
@@ -117,7 +132,11 @@ function Humanoid:Move(V3)
 
 	--When Autorotate is Enabled, Move Vector Becomes Lookvector (Moves Forward)
 	if (self.AutoRotate) then 
-		newV3 = Vector3.new(0, 0, -1)
+		if (normalized.Magnitude > 0) then
+			newV3 = Vector3.new(0, 0, -1)
+		else 
+			newV3 = normalized
+		end
 	else
 		newV3 = normalized
 	end
@@ -134,6 +153,7 @@ function Humanoid:MoveTo(TargetPos, timeOut)
 		timeOut = 8
 	end
 
+	self.ReachedTarget = false
 	self.GoalPos = TargetPos
 	self:Move(direction)
 
@@ -141,34 +161,34 @@ function Humanoid:MoveTo(TargetPos, timeOut)
 		local dist = (TargetPos - self.Base.Position).Magnitude
 		local deltaTime = (time() - startTim)
 
-		if (dist < 1 or deltaTime > timeOut) then
+		if (dist < self.TargetReachDist or deltaTime > timeOut) then
 			self._Maid.MoveToEvent:Disconnect()
 			self:Move(Vector3.new())
+			self.ReachedTarget = true
 			self.MoveToFinished:Fire()
+			
+			debugPrint(false, "Reached Target!")
 		end
 	end)
 end
 
-function Humanoid:Face(look) 
+function Humanoid:Face(UnitVec) 
 	--Manually Face Obj 
-	if (self.AutoRotate) then 
-		warn("Humanoid:Face() Cannot be Used while Humanoid.Autorotate is True")
-		return 
-	end
+	--It will be Immideately Overwritten by Humanoid:Calculate() if Humanoid.Autorotate is True while Moving
 
 	if (typeof(UnitVec) == "Vector3") then 
-		local right = look:Cross(Vector3.new(0,1,0))
-		local up = right:Cross(look)
+		local right = UnitVec:Cross(Vector3.new(0,1,0))
+		local up = right:Cross(UnitVec)
 
-		self.RotAttach.WorldCFrame = CFrame.fromMatrix(look, right, up)
+		self.RotAttach.WorldCFrame = CFrame.fromMatrix(Vector3.new(), right, up)
 	else 
-		warn("Humanoid:Face() Requires Unit Vector")
+		debugPrint(true, "Humanoid:Face() Requires Unit Vector")
 	end
 end
 
 function Humanoid:FaceTo(TargCF)
 	if (self.AutoRotate) then 
-		warn("Humanoid:FaceTo() Cannot be Used while Humanoid.Autorotate is True")
+		debugPrint(true, "Humanoid:FaceTo() Cannot be Used while Humanoid.Autorotate is True")
 		return 
 	end
 
@@ -176,7 +196,7 @@ function Humanoid:FaceTo(TargCF)
 		local unitVec = (TargCF.Position - self.BaseAttach.WorldCFrame.Position).Magnitude 
 		self:Face(unitVec)
 	else
-		warn("Humanoid:FaceTo() Requires Target CFrame")
+		debugPrint(true, "Humanoid:FaceTo() Requires Target CFrame")
 	end
 end
 
@@ -195,10 +215,7 @@ function Humanoid:Calculate()
 		--Rotate towards Goal
 		local nonHeightTarg = Vector3.new(self.GoalPos.X, self.Base.Position.Y, self.GoalPos.Z)
 		local look = (nonHeightTarg - self.Base.Position).Unit
-		local right = look:Cross(Vector3.new(0,1,0))
-		local up = right:Cross(look)
-
-		self.RotAttach.WorldCFrame = CFrame.fromMatrix(look, right, up)
+		self:Face(look)
 	end
 
 
@@ -250,7 +267,7 @@ function Humanoid:Init()
 	Maid = self.Shared.Maid 
 	Event = self.Shared.Event
 
-	print("Referenced")
+	debugPrint(false, "Referenced")
 end
 
 
