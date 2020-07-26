@@ -16,7 +16,7 @@ local Spawn
 local UIController = {}
 
 function UIController:FPSCheck()
-    RunService.Heartbeat:Connect(function(delta)
+    RunService.RenderStepped:Connect(function(delta)
         FPS.Text.Text = "FPS: " .. tostring(math.floor(1 / delta))
     end)
 end
@@ -48,7 +48,6 @@ function UIController:Start()
     self:CountCheck()
     self:SpawnButton()
 end
-
 
 function UIController:Init()
 	

@@ -9,7 +9,7 @@ local RunService = game:GetService("RunService")
 local Maid
 local Event
 
-local Debug = true
+local Debug = false
 
 --Function
 local function fSpawn(func, ...) --From Nevermore Engine by Quenty, Modified by Crazyman32
@@ -33,7 +33,7 @@ end
 local Humanoid = {}
 Humanoid.__index = Humanoid
 
-function Humanoid.new(Character)
+function Humanoid.new(Character, BAttach, RAttach, VForce, JForce, AOrientation)
 	--[[Components
 		VectorForce;
 		(Not Used)BodyGyro; --Differed Due to Performance Problems
@@ -45,24 +45,29 @@ function Humanoid.new(Character)
 	-- local BaseAttach = HumBase:FindFirstChild("Base")
 	-- local RptAttach = HumBase:FindFirstChild("Rot")
 
-	local BaseAttach = Instance.new("Attachment")
-	local RotAttach = Instance.new("Attachment")
+	local BaseAttach = BAttach or Instance.new("Attachment")
+	local RotAttach = RAttach or Instance.new("Attachment")
 
-	local VF = Instance.new("VectorForce")
-	local JF = Instance.new("VectorForce")
-	local AO = Instance.new("AlignOrientation")
+	local VF = VForce or Instance.new("VectorForce")
+	local JF = JForce or Instance.new("VectorForce")
+	local AO = AOrientation or Instance.new("AlignOrientation")
+
+	BaseAttach.Name = "BaseAttach"
+	RotAttach.Name = "RotAttach"
 
 	VF.Attachment0 = BaseAttach
 	VF.ApplyAtCenterOfMass = true
+	VF.Name = "MoveVectorForce"
 
 	JF.Attachment0 = BaseAttach
 	JF.ApplyAtCenterOfMass = true
 	JF.Force = Vector3.new()
+	JF.Name = "JumpVectorForce"
 
 	AO.Attachment0 = BaseAttach
 	AO.Attachment1 = RotAttach
 	AO.MaxTorque = 20000
-
+	AO.Name = "CharacterAlignOrientation"
 
 	BaseAttach.Parent = HumBase
 	RotAttach.Parent = workspace.Terrain
@@ -88,7 +93,7 @@ function Humanoid.new(Character)
 		Mass = 0;
 
 		AutoRotate = true; 
-		TargetReachDist = 3;		
+		TargetReachDist = 5;		
 
 		--State 
 		ReachedTarget = true;
@@ -98,6 +103,7 @@ function Humanoid.new(Character)
 
 		--Event
 		MoveToFinished = Event.new();
+		Died = Event.new();
 
 		--Other
 		_Maid = Maid.new();
@@ -105,6 +111,39 @@ function Humanoid.new(Character)
 	}, Humanoid)
 
 	return self
+end
+
+function Humanoid:CreateHumFromClient(me, Character, RotationAttach)
+	if (RunService:IsServer()) then 
+		debugPrint(true, "CreateHumFromClient() Needs to Be Called From Client!!")
+		return 
+	end
+
+	--Confirm the Player has NetworkOwner
+	local OwnsNetwork = false
+
+	_, e = pcall(function()
+		OwnsNetwork = Character.PrimaryPart:GetNetworkOwner() == me 
+	end) 
+
+	if (OwnsNetwork) then
+		--Get Components
+		local HumBase = Character:WaitForChild("HumanoidBase", 8)
+
+		if (HumBase) then
+			local BaseAttach = HumBase:FindFirstChild("BaseAttach")
+			local RotAttach = RotationAttach
+
+			local VF = HumBase:FindFirstChild("MoveVectorForce")
+			local JF = HumBase:FindFirstChild("JumpVectorForce")
+			local AO = HumBase:WaitForChild("CharacterAlignOrientation")
+
+			return self.new(Character, BaseAttach, RotAttach, VF, JF, AO)
+		end
+	else 
+		debugPrint(true, "The Local Player Needs Network Owner to Handle Humanoid!")
+		debugPrint(true, e)
+	end
 end
 
 function Humanoid:Jump()
@@ -167,7 +206,7 @@ function Humanoid:MoveTo(TargetPos, timeOut)
 			self.ReachedTarget = true
 			self.MoveToFinished:Fire()
 			
-			debugPrint(false, "Reached Target!")
+			debugPrint(false, "Reached, TimeOut: ", dist < self.TargetReachDist, deltaTime > timeOut)
 		end
 	end)
 end

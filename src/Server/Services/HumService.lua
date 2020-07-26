@@ -10,14 +10,14 @@ local RunService = game:GetService("RunService")
 
 --Vars
 local amount = 0
-local base = ServerStorage.Base
+local base = ServerStorage.Characters.Dinosaur
 
 
 local HumService = {Client = {}}
 
 function HumService:SpawnHum()
     local char = base:Clone()
-    local newHum = self.Modules.Humanoid.new(char)
+    local newHum = self.Shared.Humanoid.new(char)
 
     char.Parent = workspace
     char.HumanoidBase:SetNetworkOwner(nil)
@@ -63,7 +63,7 @@ function HumService:SpawnHum()
                 newHum:MoveTo(char.PrimaryPart.Position, 1)
             end
         elseif (newHum.ReachedTarget) then
-            wait(10)
+            wait(1)
             local X = math.random(-50, 50)
             local Y = math.random(-5, 5)
             local Z = math.random(-50, 50)
