@@ -31,8 +31,16 @@ function UIController:SpawnButton()
     Spawn.Text.MouseButton1Down:Connect(function()
         self.Services.HumService.Spawn:Fire()
     end)
-    self.Services.HumService.Spawn:Fire()
+    -- self.Services.HumService.Spawn:Fire()
 end
+
+function UIController:ChangeReplicationCount()
+    RepSetting.Text.FocusLost:Connect(function()
+        local e = tonumber(RepSetting.Text.Text) or 15
+        RepSetting.Text.Text = e 
+        self.Modules.Setting.RenderCount = e
+    end)
+end 
 
 
 function UIController:Start()
@@ -43,10 +51,12 @@ function UIController:Start()
     FPS = MainUI:WaitForChild("FPS")
     Count = MainUI:WaitForChild("Count")
     Spawn = MainUI:WaitForChild("Spawn")
+    RepSetting = MainUI:WaitForChild("MaxRender")
 
     self:FPSCheck()
     self:CountCheck()
     self:SpawnButton()
+    self:ChangeReplicationCount()
 end
 
 function UIController:Init()

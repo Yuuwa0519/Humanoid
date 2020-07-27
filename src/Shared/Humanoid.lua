@@ -270,19 +270,13 @@ function Humanoid:GetMass(considerGravity)
 end
 
 function Humanoid:Activate()
+	-- self.Base.BrickColor = BrickColor.White()
+	self.VF.Enabled = true
 	if (self.AutoRotate) then
 		self.VF.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
 	else
 		self.VF.RelativeTo = Enum.ActuatorRelativeTo.World
 	end
-
-	for _, obj in pairs(self.Char:GetDescendants()) do
-		if (obj:IsA("BasePart") and obj ~= self.Base) then
-			obj.Massless = true
-		end
-	end
-
-	self.LastDelta  = 0
 
 	self._Maid:GiveTask(RunService.Heartbeat:Connect(function()
 		self:Calculate()
@@ -291,6 +285,8 @@ end
 
 function Humanoid:Deactivate()
 	self._Maid:Destroy()
+	-- self.Base.BrickColor = BrickColor.Red()
+	self.VF.Enabled = false 
 end
 
 function Humanoid:Init() 

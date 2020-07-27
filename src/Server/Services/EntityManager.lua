@@ -8,7 +8,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 --Var 
 local ManagedEntity = {}
-local EntityIds
 
 local CEvents = {
 
@@ -16,30 +15,26 @@ local CEvents = {
 
 local EntityManager = {Client = {}}
 
-function EntityManager:AddEntity(serverObj, clientObj, animArray)
-    local Id = EntityIds
-    EntityIds += 1
-
+function EntityManager:AddEntity(ServerObj, ClientObj, C0, AnimArray)
     local newEntity = {
-        ServerObj = ServerObj;
         ClientObj = ClientObj;
-        Anims = animArray;
+        C0 = C0;
+        Anims = AnimArray;
     };
 
-    ManagedEntity[Id] = newEntity
-    return Id
+    ManagedEntity[ServerObj] = newEntity
 end
 
-function EntityManager:RemoveEntity(Id)
-    ManagedEntity[Id] = nil
+function EntityManager:RemoveEntity(Obj)
+    ManagedEntity[Obj] = nil
 end
 
-function EntityManager:GetEntity(Id)
-    return ManagedEntity[Id]
+function EntityManager:GetEntityData(plr, Obj)
+    return ManagedEntity[Obj]
 end 
 
-function EntityManager.Client:GetEntity(Id)
-    return self.Server:GetEntity(Id)
+function EntityManager.Client:GetEntityData(...)
+    return self.Server:GetEntityData(...)
 end
 
 function EntityManager:Init()

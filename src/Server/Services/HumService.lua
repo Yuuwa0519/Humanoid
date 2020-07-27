@@ -4,23 +4,33 @@
 
 --Service
 local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PhysicsService = game:GetService("PhysicsService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
+--Obj
+local ClientRenderChars = ReplicatedStorage.EntityObjects
+local ServerRenderHums = ServerStorage.EntityObjects
+local base = ServerRenderHums.Base
+local ClientRender = ClientRenderChars.Dinosaur
+
 --Vars
 local amount = 0
-local base = ServerStorage.Characters.Dinosaur
 
 
 local HumService = {Client = {}}
 
 function HumService:SpawnHum()
     local char = base:Clone()
+    local entityClone = ClientRender
     local newHum = self.Shared.Humanoid.new(char)
 
-    char.Parent = workspace
+    char.Parent = workspace.Characters
     char.HumanoidBase:SetNetworkOwner(nil)
+
+    --Add to Entity 
+    self.Services.EntityManager:AddEntity(char, entityClone, CFrame.new(0, 0, 0), {})
     -- for _, part in pairs(char:GetDescendants()) do
     --     if (part:IsA("BasePart")) then
     --         PhysicsService:SetPartCollisionGroup(part, "Humanoids")
@@ -29,8 +39,6 @@ function HumService:SpawnHum()
     
     amount = amount + 1
     self:FireAllClients("Spawned", amount)
-
-    newHum:Activate()
 
     --Humanoid Vars
     local lastPos = newHum.Base.Position
@@ -42,6 +50,7 @@ function HumService:SpawnHum()
         -- wait(5)
 
         local cDist, cPlr = math.huge, nil
+        local goalPos
 
         for _, plr in pairs(Players:GetPlayers()) do
             local char = plr.Character
@@ -56,19 +65,26 @@ function HumService:SpawnHum()
             end
         end
 
-        if (cPlr) then
+        if (cPlr and newHum.ReachedTarget) then
             local  char = cPlr.Character
 
             if (char) then
-                newHum:MoveTo(char.PrimaryPart.Position, 1)
+                goalPos = char.PrimaryPart.Position
             end
         elseif (newHum.ReachedTarget) then
-            wait(1)
             local X = math.random(-50, 50)
             local Y = math.random(-5, 5)
             local Z = math.random(-50, 50)
 
-            newHum:MoveTo(newHum.Base.Position + Vector3.new(X, Y, Z))
+            goalPos = newHum.Base.Position + Vector3.new(X, Y, Z)
+        end 
+
+        if (newHum.ReachedTarget) then 
+            -- print("Moving to New Point")
+            newHum:Deactivate()
+            wait(5)
+            newHum:Activate()
+            newHum:MoveTo(goalPos)
         end
 
         if ((newHum.Base.Position - lastPos).Magnitude < 2 and time() - lastJumpCheck > 5) then
