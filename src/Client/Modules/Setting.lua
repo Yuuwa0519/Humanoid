@@ -6,6 +6,7 @@
 
 local Setting = {
     RenderCount = 10;
+    RenderRadius = 100;
 }
 
 

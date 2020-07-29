@@ -226,11 +226,6 @@ function Humanoid:Face(UnitVec)
 end
 
 function Humanoid:FaceTo(TargCF)
-	if (self.AutoRotate) then 
-		debugPrint(true, "Humanoid:FaceTo() Cannot be Used while Humanoid.Autorotate is True")
-		return 
-	end
-
 	if (typeof(TargCF) == "CFrame") then 
 		local unitVec = (TargCF.Position - self.BaseAttach.WorldCFrame.Position).Magnitude 
 		self:Face(unitVec)

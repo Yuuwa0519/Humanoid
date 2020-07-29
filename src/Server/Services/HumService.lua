@@ -18,7 +18,6 @@ local ClientRender = ClientRenderChars.Dinosaur
 --Vars
 local amount = 0
 
-
 local HumService = {Client = {}}
 
 function HumService:SpawnHum()
@@ -30,7 +29,7 @@ function HumService:SpawnHum()
     char.HumanoidBase:SetNetworkOwner(nil)
 
     --Add to Entity 
-    self.Services.EntityManager:AddEntity(char, entityClone, CFrame.new(0, 0, 0), {})
+    self.Services.EntityService:AddData(char, entityClone, {})
     -- for _, part in pairs(char:GetDescendants()) do
     --     if (part:IsA("BasePart")) then
     --         PhysicsService:SetPartCollisionGroup(part, "Humanoids")
