@@ -12,13 +12,6 @@ local Event
 local Debug = false
 
 --Function
-local function fSpawn(func, ...) --From Nevermore Engine by Quenty, Modified by Crazyman32
-	local args = table.pack(...)
-	local bindable = Instance.new("BindableEvent")
-	bindable.Event:Connect(function() func(table.unpack(args, 1, args.n)) end)
-	bindable:Fire()
-	bindable:Destroy()
-end
 
 local function debugPrint(isWarn, ...)
 	if (not Debug) then return end 
@@ -285,15 +278,6 @@ function Humanoid:Deactivate()
 end
 
 function Humanoid:Init() 
-	--Call This right after require()ing this module
-	--[[
-		Maid = require(script.Maid)
-		Event = require(script.Event)
-		
-		Uncomment This when Using without AeroGameFrameWork, and Comment out the one below this
-		Maid From NevermoreEngine by Quenty
-		Event by Crazyman32 in AGF
-	]]
 	Maid = self.Shared.Maid 
 	Event = self.Shared.Event
 

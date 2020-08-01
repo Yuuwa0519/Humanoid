@@ -4,7 +4,6 @@
 
 --Services 
 local CollectionService = game:GetService("CollectionService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 --Vars 
 local EntityIds = -100000
@@ -75,7 +74,7 @@ function EntityService:FireAnimation(EntityId, AnimName, PlrtoIgnore)
     end 
 end 
 
-function EntityService.Client:DownloadEntity(plr, identifier)
+function EntityService.Client:DownloadEntity(_, identifier)
     return self.Server:GetEntity(identifier)
 end 
 
