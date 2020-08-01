@@ -29,7 +29,7 @@ function HumService:SpawnHum()
     char.HumanoidBase:SetNetworkOwner(nil)
 
     --Add to Entity 
-    self.Services.EntityService:AddData(char, entityClone, {})
+    self.Services.EntityService:AddEntity(char, entityClone, {}, CFrame.new())
     -- for _, part in pairs(char:GetDescendants()) do
     --     if (part:IsA("BasePart")) then
     --         PhysicsService:SetPartCollisionGroup(part, "Humanoids")

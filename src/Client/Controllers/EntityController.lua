@@ -1,114 +1,131 @@
 -- Entity Controller
 -- Yuuwa0519
--- July 28, 2020
+-- July 29, 2020
 
---Services
+--Services 
 local CollectionService = game:GetService("CollectionService")
+
+--Modules 
+local EntityService 
+
+local CacheManager
+local EntityObject
+local EntitySettings
 
 --Obj 
 local Camera = workspace.CurrentCamera
 
 --Var 
-local EntityService
-local CacheManager
-local LoopCount = 0 
-
 local RenderedEntities = {}
-
---Setting 
-local EntityRenderRadius = 50
-local EntityRenderCount = 500
-local EntityRenderRate = 1 
-local BatchSize = 5
-local Entity_CollectionTag = "CharacterEntityObject"
-
 
 local EntityController = {}
 
-function EntityController:RenderEntity(ServerObj)
-    -- print("Render")
-    local EntityData = CacheManager:GetCache(ServerObj)
+function EntityController:RenderEntities(Actors)
+    for _, Actor in pairs(Actors) do 
+        local Entity = CacheManager:GetCache(Actor)
 
-    if (EntityData) then
-        if (RenderedEntities[EntityData.Id]) then return end 
+        if (Entity) then
+            --Reuse Cache
+            if (not Entity.DoNotLoad) then
+                Entity:WearCloth()
+            else
+                warn("Entity Still Remaining in Cache Even Though Do Not Load!")
+            end
+        else
+            --First Time Creating Enti
+            local EntityData = EntityService:DownloadEntity(Actor)
 
-        EntityData:Mount()
-        RenderedEntities[EntityData.Id] = EntityData
-    else 
-        print("First Creation!")
-        EntityData = self.Services.EntityService:DownloadEntity(ServerObj)
-        local newEntity = self.Modules.EntityManaging.EntityObject.new(EntityData.Id, EntityData.Actor, EntityData.Clothing:Clone(), EntityData.AnimArray)
-        newEntity:Mount()
-        print("Mounted")
-        RenderedEntities[EntityData.Id] = newEntity
-        CacheManager:AddCache(newEntity) --Initial Cache
+            if (EntityData) then 
+                local newEntity = EntityObject.new(EntityData)
+                newEntity:WearCloth()
+
+                table.insert(RenderedEntities, newEntity)
+                CacheManager:AddCache(newEntity)
+                print("Initial Creation", newEntity.Id)
+            else
+                warn("Untracked Entity: ", Actor.PrimaryPart:GetFullName())
+            end
+        end 
     end
 end
 
-function EntityController:DerenderEntity(ServerObj)
-    -- print("Derender")
-    local EntityData 
-
-    for _, entity in pairs(RenderedEntities) do
-        if (entity.ServerObj == ServerObj) then 
-            entity:UnMount()
-            RenderedEntities[entity.Id] = nil
-            CacheManager:AddCache(entity)
-            return
-        end
-    end     
+function EntityController:DerenderEntities(Entities)
+    for _, Entity in pairs(Entities) do 
+        --Derender, Cache
+        Entity:TakeoffCloth()
+        CacheManager:AddCache(Entity)
+    end
 end 
 
-function EntityController:RenderEntities()
-    --Get all Entities
-    local allEntities = CollectionService:GetTagged(Entity_CollectionTag)
-    local orderedEntities = {}
-
+function EntityController:GetEntitiesToRender()
     local CamPos = Camera.CFrame.Position
+    local allEntityActors = CollectionService:GetTagged(EntitySettings.EntityTag)
+    local reorderedActors = {}
 
-    for i, entity in pairs(allEntities) do
-        local dist = (entity.PrimaryPart.Position - CamPos).Magnitude
+    for _, Actor in pairs(allEntityActors) do
+        local dist = (Actor.PrimaryPart.Position - CamPos).Magnitude
 
-        table.insert(orderedEntities, {entity, dist})
+        table.insert(reorderedActors, {Actor, dist})
     end 
 
-    table.sort(orderedEntities, function(a, b)
-        return a[2] < b[2]
+    table.sort(reorderedActors, function(a, b)
+        return (a[2] < b[2])
     end)
-    -- print(#orderedEntities)
-    -- print(#allEntities)
-    -- print(self.Modules.Setting.RenderRadius)
-    -- print(self.Modules.Setting.RenderCount)
-    for i = 1, #allEntities do
-        if (i <= self.Modules.Setting.RenderCount) then 
-            if (orderedEntities[i][2] < self.Modules.Setting.RenderRadius) then 
-                self:RenderEntity(orderedEntities[i][1])
-            else
-                self:DerenderEntity(orderedEntities[i][1])
+
+    --Separate it into Render and Derender Group
+    local Render = {}--self.Shared.TableUtil.CopyShallow(ForceRenderEntities)
+    local Derender = {}--self.Shared.TableUtil.CopyShallow(ForceDerenderEntities)
+
+    for _, Array in pairs(reorderedActors) do
+        if ((#Render + #RenderedEntities) < EntitySettings.MaxRenderCount) then 
+            if (Array[2] <= EntitySettings.MaxRenderDist) then
+                table.insert(Render, Array[1])
             end 
         else 
-            self:DerenderEntity(orderedEntities[i][1])
-        end 
-
-        if (i % 20 == 0) then 
-            wait() 
+            --If Rendering Objects is Over MaxRenderCount, Break out of Loop
+            break
         end 
     end 
 
-    LoopCount += 1 
-    if (LoopCount % 10 == 0) then 
-        CacheManager:CollectGarbage(Camera.CFrame.Position)
-    end 
+    for i, Entity in pairs(RenderedEntities) do 
+        local Actor = Entity.Actor 
+        local dist = (Actor.PrimaryPart.Position - CamPos).Magnitude
+
+        if (dist > EntitySettings.MaxRenderDist) then 
+            table.insert(Derender, Entity)
+            table.remove(RenderedEntities, i)
+        end
+    end
+
+    return Render, Derender
 end 
 
 function EntityController:Start()
+    CacheManager = self.Modules.Entity.CacheManager
+    EntitySettings = self.Modules.Entity.EntitySettings
+    EntityObject = self.Modules.Entity.EntityObject
     EntityService = self.Services.EntityService
-    CacheManager = self.Modules.EntityManaging.CacheManager
-    
+
+    local loopCount = 1
+
     while (true) do
-        self:RenderEntities()
-        wait(EntityRenderRate)
+        local Render, Derender = self:GetEntitiesToRender()
+
+        self:DerenderEntities(Derender)
+        self:RenderEntities(Render)
+
+        loopCount += 1 
+        if (loopCount % 1) == 0 then 
+            CacheManager:CollectGarbage(Camera.CFrame.Position)
+        end
+        
+        wait(EntitySettings.RenderRate)
     end 
 end
+
+function EntityController:Init()
+
+end
+
 
 return EntityController

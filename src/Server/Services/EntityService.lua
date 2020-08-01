@@ -1,105 +1,89 @@
 -- Entity Service
 -- Yuuwa0519
--- July 28, 2020
+-- July 29, 2020
 
---Service 
+--Services 
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
---Var
-local EntityDatas = {
-    --[[
-        {
-            Name = "";
-            Id = "";
-            Actor = Model; --Server Object
-            Clothing = Model; --Client Object 
-            Anim = {
-                Walk = "";
-                Jump = "";
-            }
-        }
-    ]]
-}
+--Vars 
+local EntityIds = -100000
+local AllEntities = {}
 
 local CEvents = {
-
+    "PlayAnimation";
 }
 
-local EntityIds = -10000
-
 --Setting 
-local Entity_CollectionTag = "CharacterEntityObject"
+local EntityCollectionTag = "_Entity"
 
 local EntityService = {Client = {}}
 
---Handle the Animation Request, and Replicate to Everyone Else
-function EntityService:AddData(Obj, CObj, Anim)
-    --Get Unique EntityId
-    local thisId = EntityIds 
-    EntityIds += 1
+function EntityService:AddEntity(Actor, Clothing, AnimDictionary, ClothingCF)
+    local Id = EntityIds 
+    EntityIds += 1 
 
-    local thisEntity = {
-        Id = thisId;
-        Actor = Obj;
-        Clothing = CObj;
-        AnimationArray = Anim;
+    local newEntity = {
+        Id = Id;
+        Actor = Actor;
+        Clothing = Clothing;
+        AnimDict = AnimDictionary;
+
+        ClothingCF = ClothingCF
     }
 
-    EntityDatas[thisId] = thisEntity
+    AllEntities[Id] = newEntity
+    CollectionService:AddTag(Actor, EntityCollectionTag) 
+end 
 
-    Obj.AncestryChanged:Connect(function(parent) 
-        if (parent == nil) then
-            self:RemoveData(thisId)
+function EntityService:RemoveEntity(Id)
+    local EntityData = AllEntities[Id]
+    if (EntityData) then
+        if (EntityData.Actor) then 
+            CollectionService:RemoveTag(EntityData.Actor, EntityCollectionTag)
         end
-    end )
 
-    CollectionService:AddTag(Obj, Entity_CollectionTag)
+        --Memory Leakage may happen? idk :P 
+        AllEntities[Id] = nil 
+    end 
+end 
 
-    return thisId
+function EntityService:GetEntity(identifier)
+    if (type(identifier) == "userdata") then 
+        --Assume that identifier is Server Actor 
+        local Entity 
+
+        for _, candidate in pairs(AllEntities) do 
+            if (candidate.Actor == identifier) then
+                Entity = candidate
+                break 
+            end 
+        end 
+
+        return Entity    
+    else 
+        --Assume that Identifier is Entity Id
+        return AllEntities[identifier] 
+    end 
 end
 
-function EntityService:RemoveData(Id)
-    local thisEntity = EntityDatas[Id]
-
-    if (thisEntity) then
-        if (thisEntity.Actor) then 
-            thisEntity.Actor:Destroy()
-        end 
-
-        EntityDatas[Id] = EntityDatas[#EntityDatas]
-        EntityDatas[#EntityDatas] = nil 
+function EntityService:FireAnimation(EntityId, AnimName, PlrtoIgnore)
+    if (PlrtoIgnore) then
+        self:FireOtherClients("PlayAnimation", PlrtoIgnore, EntityId, AnimName)
+    else
+        self:FireAllClients("PlayAnimation", EntityId, AnimName) 
     end 
 end 
 
-function EntityService:DownloadEntity(plr, Obj)
-    local EntityId
-    for Id, entityData in pairs(EntityDatas) do
-        if (entityData.Actor == Obj) then 
-            EntityId = Id 
-            break 
-        end 
-    end 
-
-    if (EntityId) then 
-        return EntityDatas[EntityId]
-    else 
-        warn(Obj:GetFullName())
-    end 
-end 
-
-function EntityService.Client:DownloadEntity(...)
-    return self.Server:DownloadEntity(...)
-end 
-
-function EntityService:Start()
-
+function EntityService.Client:DownloadEntity(plr, identifier)
+    return self.Server:GetEntity(identifier)
 end 
 
 function EntityService:Init()
     for _, name in pairs(CEvents) do 
         self:RegisterClientEvent(name)
     end 
-end
+end 
 
 
 return EntityService
