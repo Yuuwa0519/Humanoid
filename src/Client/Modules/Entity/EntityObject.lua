@@ -63,12 +63,9 @@ function EntityObject:WearCloth()
         return
     end 
     
-    print("Mount", self.Id)
+    -- print("Mount", self.Id)
 
     --Set CFrame
-    print(self.Clothing.PrimaryPart)
-    wait(1)
-    print(self.Clothing.PrimaryPart)
     self.Clothing.Parent = self.Actor
     self.Clothing:SetPrimaryPartCFrame(self.Actor:GetPrimaryPartCFrame():ToWorldSpace(self.ClothingCF))
     self.Clothing.PrimaryPart.Anchored = false
@@ -79,7 +76,7 @@ end
 
 function EntityObject:TakeoffCloth()
     if (not self.Mounted) then return end 
-    print("Dismount", self.Id)
+    -- print("Dismount", self.Id)
 
     self.Weld.Part1 = nil 
     self.Clothing.PrimaryPart.Anchored = true 

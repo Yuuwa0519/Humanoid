@@ -64,6 +64,7 @@ end
 
 function CacheManager:CollectGarbage(camPos)
     local RemovedCacheCount = 0
+    
     for _, Entity in pairs(Cache) do 
         if (not Entity.DoNotLoad) then 
             if (Entity.Actor) then
@@ -94,7 +95,9 @@ function CacheManager:CollectGarbage(camPos)
         end
     end
 
-    warn("Collected " .. RemovedCacheCount .. " Cache!")
+    if (RemovedCacheCount > 0) then
+        warn("Collected " .. RemovedCacheCount .. " Cache!")
+    end
 end
 
 return CacheManager

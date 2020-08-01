@@ -28,6 +28,7 @@ function EntityController:RenderEntities(Actors)
             --Reuse Cache
             if (not Entity.DoNotLoad) then
                 Entity:WearCloth()
+                table.insert(RenderedEntities, Entity)
             else
                 warn("Entity Still Remaining in Cache Even Though Do Not Load!")
             end
@@ -41,7 +42,6 @@ function EntityController:RenderEntities(Actors)
 
                 table.insert(RenderedEntities, newEntity)
                 CacheManager:AddCache(newEntity)
-                print("Initial Creation", newEntity.Id)
             else
                 warn("Untracked Entity: ", Actor.PrimaryPart:GetFullName())
             end
@@ -49,11 +49,22 @@ function EntityController:RenderEntities(Actors)
     end
 end
 
-function EntityController:DerenderEntities(Entities)
-    for _, Entity in pairs(Entities) do 
+function EntityController:DerenderEntities(Actors)
+    for _, Actor in pairs(Actors) do 
         --Derender, Cache
-        Entity:TakeoffCloth()
-        CacheManager:AddCache(Entity)
+        local Entity = CacheManager:GetCache(Actor)
+
+        if (Entity) then 
+            Entity:TakeoffCloth()
+            CacheManager:AddCache(Entity)
+            
+            for i, candidate in pairs(RenderedEntities) do
+                if (candidate.Id == Entity.Id) then 
+                    table.remove(RenderedEntities, i)
+                    break
+                end
+            end
+        end
     end
 end 
 
@@ -73,30 +84,100 @@ function EntityController:GetEntitiesToRender()
     end)
 
     --Separate it into Render and Derender Group
-    local Render = {}--self.Shared.TableUtil.CopyShallow(ForceRenderEntities)
-    local Derender = {}--self.Shared.TableUtil.CopyShallow(ForceDerenderEntities)
+    local Render = {}
+    local Derender = {}
+    local TotalRenders = 0
+
+    -- for i, Entity in pairs(RenderedEntities) do 
+    --     local Actor = Entity.Actor 
+    --     local dist = (Actor.PrimaryPart.Position - CamPos).Magnitude
+
+    --     if (dist > EntitySettings.MaxRenderDist) then 
+    --         table.insert(Derender, Entity)
+    --         table.remove(RenderedEntities, i)
+    --     end
+    -- end
+
+    -- for _, Array in pairs(reorderedActors) do
+    --     local isExist = false
+
+    --     for _, Entity in pairs(RenderedEntities) do
+    --         if (Entity.Actor == Array[1]) then 
+    --             isExist = true
+    --             break 
+    --         end
+    --     end
+
+    --     if (not isExist) then 
+    --         if ((#Render + #RenderedEntities) <= EntitySettings.MaxRenderCount) then 
+    --             if (Array[2] <= EntitySettings.MaxRenderDist) then
+    --                 table.insert(Render, Array[1])
+    --             end 
+    --         else 
+    --             --If Rendering Objects is Over MaxRenderCount, Break out of Loop
+    --             warn("Max Render")
+    --             break
+    --         end
+    --     else 
+    --         warn("Already Rendered")
+    --     end 
+    -- end 
+
+    -- for i = 1, EntitySettings.MaxRenderCount do 
+    --     local Array = reorderedActors[i]
+
+    --     if (Array) then
+    --         local isExist = false 
+
+    --         for _, Entity in pairs(RenderedEntities) do 
+    --             if (Entity.Actor == Array[1]) then 
+    --                 isExist = true
+    --                 break 
+    --             end
+    --         end
+
+    --         if (not isExist) then 
+    --             if (Array[2] <= EntitySettings.MaxRenderDist) then
+    --                 table.insert(Render, Array[1])
+    --             end
+    --         else 
+    --             warn("Already Rendered")
+    --         end 
+    --     end
+    -- end
+    -- self.Shared.TableUtil.Print(reorderedActors, "ReorderedAxtor", true)
 
     for _, Array in pairs(reorderedActors) do
-        if ((#Render + #RenderedEntities) < EntitySettings.MaxRenderCount) then 
-            if (Array[2] <= EntitySettings.MaxRenderDist) then
-                table.insert(Render, Array[1])
+        print(#Render, EntitySettings.MaxRenderCount)
+        if (Array[2] <= EntitySettings.MaxRenderDist) then 
+            if ((TotalRenders) <= EntitySettings.MaxRenderCount) then
+                local isExist = false 
+
+                for _, Entity in pairs(RenderedEntities) do 
+                    if (Entity.Actor == Array[1]) then 
+                        isExist = true
+                        break 
+                    end
+                end
+
+                if (not isExist) then
+                    table.insert(Render, Array[1])
+                -- else
+                --     warn("Already Render")
+                end
+                TotalRenders += 1
+            else 
+                -- warn("MaxRender")
+                table.insert(Derender, Array[1])
             end 
         else 
-            --If Rendering Objects is Over MaxRenderCount, Break out of Loop
-            break
-        end 
+            -- warn("Too Far")
+            table.insert(Derender, Array[1])
+        end
     end 
 
-    for i, Entity in pairs(RenderedEntities) do 
-        local Actor = Entity.Actor 
-        local dist = (Actor.PrimaryPart.Position - CamPos).Magnitude
-
-        if (dist > EntitySettings.MaxRenderDist) then 
-            table.insert(Derender, Entity)
-            table.remove(RenderedEntities, i)
-        end
-    end
-
+    -- self.Shared.TableUtil.Print(Render, "Render", false)
+    -- self.Shared.TableUtil.Print(Derender, "Derender", false)
     return Render, Derender
 end 
 
@@ -110,22 +191,16 @@ function EntityController:Start()
 
     while (true) do
         local Render, Derender = self:GetEntitiesToRender()
-
+        
         self:DerenderEntities(Derender)
         self:RenderEntities(Render)
 
         loopCount += 1 
-        if (loopCount % 1) == 0 then 
+        if (loopCount % 10) == 0 then 
             CacheManager:CollectGarbage(Camera.CFrame.Position)
         end
-        
         wait(EntitySettings.RenderRate)
     end 
 end
-
-function EntityController:Init()
-
-end
-
 
 return EntityController
