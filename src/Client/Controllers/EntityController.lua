@@ -115,7 +115,7 @@ function EntityController:Start()
         self:RenderEntities(Render)
 
         loopCount += 1 
-        if (loopCount % 1) == 0 then 
+        if (loopCount % 10) == 0 then 
             CacheManager:CollectGarbage(Camera.CFrame.Position)
         end
         
