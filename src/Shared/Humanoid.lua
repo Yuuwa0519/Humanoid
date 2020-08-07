@@ -74,7 +74,7 @@ end
 local Humanoid = {}
 Humanoid.__index = Humanoid
 
-function Humanoid.new(Character, RAttach, Drag, WalkSpeed)
+function Humanoid.new(Character, RAttach, HumSettings)
 	--[[Components
 		VectorForce;
 		(Not Used)BodyGyro; --Differed Due to Performance Problems
@@ -129,8 +129,8 @@ function Humanoid.new(Character, RAttach, Drag, WalkSpeed)
 		--Physic Component
 		Direction = Vector3.new(); --Move Direction
 		GoalPos = Vector3.new(); --where to look if AutoRotate
-		DragForce = (Drag or 20);
-		WalkSpeed = (WalkSpeed or 120);
+		DragForce = (HumSettings.Drag or 60);
+		WalkSpeed = (HumSettings.WalkSpeed or 120);
 		Mass = 0;
 
 		AutoRotate = true; 
@@ -138,6 +138,7 @@ function Humanoid.new(Character, RAttach, Drag, WalkSpeed)
 
 		--State 
 		ReachedTarget = true;
+		Locked = false;
 
 		--Humanoid Components
 		Health = 100;
@@ -148,8 +149,19 @@ function Humanoid.new(Character, RAttach, Drag, WalkSpeed)
 
 		--Other
 		_Maid = Maid.new();
+		_ObjMaid = Maid.new()
 
 	}, Humanoid)
+
+	self._ObjMaid:GiveTask(self.MoveToFinished)
+	self._ObjMaid:GiveTask(self.Died)
+	self._ObjMaid:GiveTask(self.Char)
+	self._ObjMaid:GiveTask(self.RotAttach)
+	self._ObjMaid:GiveTask(self.Char.AncestryChanged:Connect(function(_, new)
+		if (new == nil) then 
+			self:DeadSequence()
+		end
+	end))
 
 	return self
 end
@@ -299,22 +311,46 @@ function Humanoid:GetMass(considerGravity)
 end
 
 function Humanoid:Activate()
-	self.VF.Enabled = true
-	if (self.AutoRotate) then
-		self.VF.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
-	else
-		self.VF.RelativeTo = Enum.ActuatorRelativeTo.World
-	end
+	if (not self.isLocked) then 
+		self.VF.Enabled = true
+		if (self.AutoRotate) then
+			self.VF.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
+		else
+			self.VF.RelativeTo = Enum.ActuatorRelativeTo.World
+		end
 
-	self._Maid:GiveTask(RunService.Heartbeat:Connect(function()
-		self:Calculate()
-	end))
+		self._Maid:GiveTask(RunService.Heartbeat:Connect(function()
+			self:Calculate()
+		end))
+		self.Base.BrickColor = BrickColor.Green()
+	else 
+		warn("Called Activate on Locked Humanoid!")
+	end 
 end
 
 function Humanoid:Deactivate()
 	self._Maid:Destroy()
 	-- self.Base.BrickColor = BrickColor.Red()
-	self.VF.Enabled = false 
+	if (not self.Locked) then
+		self.VF.Enabled = false
+		self.Base.BrickColor = BrickColor.Red()
+	end 
+end
+
+function Humanoid:DeadSequence()
+	warn("Death Sequence")
+	self.Locked = true
+	self:Deactivate()
+	self.MoveToFinished:Fire()
+	self.Died:Fire()
+
+	self._ObjMaid:Destroy()
+	for index, value in pairs(self) do 
+		value = nil
+	end 
+	
+	warn("Humanoid Death!")
+	self.Shared.TableUtil.Print(self, "Humanoid")
 end
 
 function Humanoid:Init() 

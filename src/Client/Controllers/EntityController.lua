@@ -20,7 +20,12 @@ local RenderedEntities = {}
 
 local EntityController = {}
 
+function EntityController:GetEntityStats()
+    return #RenderedEntities
+end
+
 function EntityController:RenderEntities(Actors)
+    local renderStart = time()
     for _, Actor in pairs(Actors) do 
         local Entity = CacheManager:GetCache(Actor)
 
@@ -47,9 +52,11 @@ function EntityController:RenderEntities(Actors)
             end
         end 
     end
+    print("Render Duration", time() - renderStart)
 end
 
 function EntityController:DerenderEntities(Actors)
+    local renderStart = time()
     for _, Actor in pairs(Actors) do 
         --Derender, Cache
         local Entity = CacheManager:GetCache(Actor)
@@ -66,9 +73,11 @@ function EntityController:DerenderEntities(Actors)
             end
         end
     end
+    print("Derender Duration", time() - renderStart)
 end 
 
 function EntityController:GetEntitiesToRender()
+    local getStart = time()
     local CamPos = Camera.CFrame.Position
     local allEntityActors = CollectionService:GetTagged(EntitySettings.EntityTag)
     local reorderedActors = {}
@@ -87,65 +96,6 @@ function EntityController:GetEntitiesToRender()
     local Render = {}
     local Derender = {}
     local TotalRenders = 0
-
-    -- for i, Entity in pairs(RenderedEntities) do 
-    --     local Actor = Entity.Actor 
-    --     local dist = (Actor.PrimaryPart.Position - CamPos).Magnitude
-
-    --     if (dist > EntitySettings.MaxRenderDist) then 
-    --         table.insert(Derender, Entity)
-    --         table.remove(RenderedEntities, i)
-    --     end
-    -- end
-
-    -- for _, Array in pairs(reorderedActors) do
-    --     local isExist = false
-
-    --     for _, Entity in pairs(RenderedEntities) do
-    --         if (Entity.Actor == Array[1]) then 
-    --             isExist = true
-    --             break 
-    --         end
-    --     end
-
-    --     if (not isExist) then 
-    --         if ((#Render + #RenderedEntities) <= EntitySettings.MaxRenderCount) then 
-    --             if (Array[2] <= EntitySettings.MaxRenderDist) then
-    --                 table.insert(Render, Array[1])
-    --             end 
-    --         else 
-    --             --If Rendering Objects is Over MaxRenderCount, Break out of Loop
-    --             warn("Max Render")
-    --             break
-    --         end
-    --     else 
-    --         warn("Already Rendered")
-    --     end 
-    -- end 
-
-    -- for i = 1, EntitySettings.MaxRenderCount do 
-    --     local Array = reorderedActors[i]
-
-    --     if (Array) then
-    --         local isExist = false 
-
-    --         for _, Entity in pairs(RenderedEntities) do 
-    --             if (Entity.Actor == Array[1]) then 
-    --                 isExist = true
-    --                 break 
-    --             end
-    --         end
-
-    --         if (not isExist) then 
-    --             if (Array[2] <= EntitySettings.MaxRenderDist) then
-    --                 table.insert(Render, Array[1])
-    --             end
-    --         else 
-    --             warn("Already Rendered")
-    --         end 
-    --     end
-    -- end
-    -- self.Shared.TableUtil.Print(reorderedActors, "ReorderedAxtor", true)
 
     for _, Array in pairs(reorderedActors) do
         if (Array[2] <= EntitySettings.MaxRenderDist) then 
@@ -177,6 +127,7 @@ function EntityController:GetEntitiesToRender()
 
     -- self.Shared.TableUtil.Print(Render, "Render", false)
     -- self.Shared.TableUtil.Print(Derender, "Derender", false)
+    print("Render Get Duration: ", time() - getStart)
     return Render, Derender
 end 
 
@@ -189,6 +140,8 @@ function EntityController:Start()
     local loopCount = 1
 
     while (true) do
+        warn("------------------------------------------------------------")
+        local renderStart = time()
         local Render, Derender = self:GetEntitiesToRender()
         
         self:DerenderEntities(Derender)
@@ -198,6 +151,7 @@ function EntityController:Start()
         if (loopCount % 10) == 0 then 
             CacheManager:CollectGarbage(Camera.CFrame.Position)
         end
+        print("Total Render Duration: ", time() - renderStart)
         wait(EntitySettings.RenderRate)
     end 
 end

@@ -12,7 +12,7 @@ local FPS = {}
 
 function FPS:CalcFPS()
     RunService.RenderStepped:Connect(function(delta)
-        FPSShower.Text.Text = (1 / delta)
+        FPSShower.Text.Text = math.floor((1 / delta))
     end)
 end
 

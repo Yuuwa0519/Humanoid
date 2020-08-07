@@ -18,7 +18,6 @@ local Rand = Random.new()
 local AnimalService = {Client = {}}
 
 function AnimalService:SpawnNPC()
-    print("Spawning NPC")
     local chosen = Rand:NextInteger(1, #AnimalList)
 
     local newNPC = AnimalList[chosen].new() 
@@ -40,7 +39,11 @@ end
 
 function AnimalService:Init()
     Creature = self.Modules.Creature
-    table.insert(AnimalList, Creature.Dinosaur)
+    AnimalList = {
+        Creature.Dinosaur;
+        Creature.Dummy;
+        Creature.Yuuwa0519;
+    }
     
     for _, v in pairs(CEvents) do
         self:RegisterClientEvent(v)

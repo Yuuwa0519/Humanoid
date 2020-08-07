@@ -113,7 +113,7 @@ function EntityObject:StopAnim(name)
 end
 
 function EntityObject:Destroy()
-    print("Destroy", self.Id)
+    -- print("Destroy", self.Id)
     self.DoNotLoad = true
     self._Maid:Destroy()
     self.Clothing:Destroy()

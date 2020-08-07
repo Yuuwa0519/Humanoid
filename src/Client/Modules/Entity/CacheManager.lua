@@ -37,8 +37,6 @@ function CacheManager:RemoveCache(Id)
         Entity:Destroy()
         
         Cache[Id] = nil
-
-        print(Cache[Id])
     else
         warn("No Entity With This Id Found: ", Id)
     end
@@ -63,6 +61,7 @@ function CacheManager:CacheModel(model)
 end
 
 function CacheManager:CollectGarbage(camPos)
+    local renderStart = time()
     local RemovedCacheCount = 0
     
     for _, Entity in pairs(Cache) do 
@@ -72,7 +71,7 @@ function CacheManager:CollectGarbage(camPos)
                     local dist = (Entity.Actor.PrimaryPart.Position - camPos).Magnitude
 
                     if (dist > self.Modules.Entity.EntitySettings.CacheRemoveDist) then 
-                        warn("Destroy Cause far Dist")
+                        -- warn("Destroy Cause far Dist")
                         self:RemoveCache(Entity.Id)
                         RemovedCacheCount += 1
                     end
@@ -98,6 +97,7 @@ function CacheManager:CollectGarbage(camPos)
     if (RemovedCacheCount > 0) then
         warn("Collected " .. RemovedCacheCount .. " Cache!")
     end
+    print("CollectGarbageDuration", time() - renderStart)
 end
 
 return CacheManager

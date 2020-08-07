@@ -1,4 +1,4 @@
--- Dinosaur
+-- Yuuwa
 -- Yuuwa0519
 -- August 1, 2020
 
@@ -10,13 +10,13 @@ local BaseCreature
 
 --Obj
 local CreatureEntities = ReplicatedStorage.EntityObjects
-local CreatureEntity = CreatureEntities.Dinosaur
+local CreatureEntity = CreatureEntities.Yuuwa0519
 
 --Var 
-local DinosaurAnimations = {}
-local DinosaurEntityOffset = CFrame.new()
-local DinosaurBase = {
-    Specie = "Dinosaur";
+local YuuwaAnimations = {}
+local YuuwaEntityOffset = CFrame.new()
+local YuuwaBase = {
+    Specie = "Yuuwa";
 
     HumanoidSettings = {
         WalkSpeed = 120;
@@ -26,16 +26,16 @@ local DinosaurBase = {
 
 local Rand = Random.new()
 
-local Dinosaur = {}
-Dinosaur.__index = Dinosaur
+local Yuuwa = {}
+Yuuwa.__index = Yuuwa
 
-function Dinosaur.new()
-    local newDino = setmetatable(BaseCreature.new(CreatureEntity, DinosaurAnimations, DinosaurEntityOffset, DinosaurBase), Dinosaur)
+function Yuuwa.new()
+    local newDino = setmetatable(BaseCreature.new(CreatureEntity, YuuwaAnimations, YuuwaEntityOffset, YuuwaBase), Yuuwa)
 
     return newDino
 end
 
-function Dinosaur:StartLogic()
+function Yuuwa:StartLogic()
     self.Actor.Parent = workspace.Characters
     self.Running = true
 
@@ -57,15 +57,13 @@ function Dinosaur:StartLogic()
     end)
 end
 
-function Dinosaur:EndLogic()
+function Yuuwa:EndLogic()
     self.Running = false
 end 
 
-
-
-function Dinosaur:Init()
+function Yuuwa:Init()
     BaseCreature = self.Modules.Creature.BaseCreature
-    setmetatable(Dinosaur, BaseCreature)
+    setmetatable(Yuuwa, BaseCreature)
 end
 
-return Dinosaur
+return Yuuwa

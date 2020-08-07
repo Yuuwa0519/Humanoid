@@ -1,4 +1,4 @@
--- Dinosaur
+-- Dummy
 -- Yuuwa0519
 -- August 1, 2020
 
@@ -10,32 +10,32 @@ local BaseCreature
 
 --Obj
 local CreatureEntities = ReplicatedStorage.EntityObjects
-local CreatureEntity = CreatureEntities.Dinosaur
+local CreatureEntity = CreatureEntities.Dummy
 
 --Var 
-local DinosaurAnimations = {}
-local DinosaurEntityOffset = CFrame.new()
-local DinosaurBase = {
-    Specie = "Dinosaur";
+local DummyAnimations = {}
+local DummyEntityOffset = CFrame.new()
+local DummyBase = {
+    Specie = "Human";
 
     HumanoidSettings = {
         WalkSpeed = 120;
-        Drag = 20;
+        Drag = 50;
     };
 }
 
 local Rand = Random.new()
 
-local Dinosaur = {}
-Dinosaur.__index = Dinosaur
+local Dummy = {}
+Dummy.__index = Dummy
 
-function Dinosaur.new()
-    local newDino = setmetatable(BaseCreature.new(CreatureEntity, DinosaurAnimations, DinosaurEntityOffset, DinosaurBase), Dinosaur)
+function Dummy.new()
+    local newDino = setmetatable(BaseCreature.new(CreatureEntity, DummyAnimations, DummyEntityOffset, DummyBase), Dummy)
 
     return newDino
 end
 
-function Dinosaur:StartLogic()
+function Dummy:StartLogic()
     self.Actor.Parent = workspace.Characters
     self.Running = true
 
@@ -57,15 +57,15 @@ function Dinosaur:StartLogic()
     end)
 end
 
-function Dinosaur:EndLogic()
+function Dummy:EndLogic()
     self.Running = false
 end 
 
 
 
-function Dinosaur:Init()
+function Dummy:Init()
     BaseCreature = self.Modules.Creature.BaseCreature
-    setmetatable(Dinosaur, BaseCreature)
+    setmetatable(Dummy, BaseCreature)
 end
 
-return Dinosaur
+return Dummy

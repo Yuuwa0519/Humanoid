@@ -29,7 +29,7 @@ function BaseCreature.new(Clothing, AnimDict, EntityOffset, baseArray)
         Running = false;
         Actor = Actor;
 
-        Humanoid = BaseCreature.Shared.Humanoid.new(Actor);
+        Humanoid = BaseCreature.Shared.Humanoid.new(Actor, nil, baseArray.HumanoidSettings);
     }
     local merged = mergeTable(creatureArray, (baseArray or {}))
 
@@ -37,6 +37,18 @@ function BaseCreature.new(Clothing, AnimDict, EntityOffset, baseArray)
 
     return self
 end
+
+function BaseCreature:Setup()
+    local diedCon 
+    diedCon = self.Humanoid.Died:Connect(function()
+        diedCon:Disconnect()
+        self.Running = false
+        self.Actor = nil
+        print("Ref Deleted!")
+    end)
+
+    self.Actor.PrimaryPart:SetNetworkOwner(nil)
+end 
 
 function BaseCreature:PlayAnimation(Name)
     EntityService:FireAnimation(self.EntityId, Name, nil)
