@@ -13,17 +13,27 @@ local HumBase = EntityObject.Base
 local BaseCreature = {}
 BaseCreature.__index = BaseCreature 
 
-function BaseCreature.new(Clothing, AnimDict, EntityOffset)
+local function mergeTable(t1, t2)
+    for index, value in pairs(t2) do 
+        t1[index] = value
+    end
+    return t1
+end
+
+function BaseCreature.new(Clothing, AnimDict, EntityOffset, baseArray)
     local Actor = HumBase:Clone()
-    
     local EntityId = EntityService:AddEntity(Actor, Clothing, AnimDict, EntityOffset)
 
-    local self = setmetatable({
+    local creatureArray = {
         EntityId = EntityId;
         Running = false;
+        Actor = Actor;
 
         Humanoid = BaseCreature.Shared.Humanoid.new(Actor);
-    }, BaseCreature)
+    }
+    local merged = mergeTable(creatureArray, (baseArray or {}))
+
+    local self = setmetatable(merged, BaseCreature)
 
     return self
 end

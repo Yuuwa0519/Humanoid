@@ -62,25 +62,24 @@ function EntityObject:WearCloth()
         warn("Called Wear Cloth Even though Do Not Load!", self.Id)
         return
     end 
-    
-    -- print("Mount", self.Id)
 
     --Set CFrame
     self.Clothing.Parent = self.Actor
     self.Clothing:SetPrimaryPartCFrame(self.Actor:GetPrimaryPartCFrame():ToWorldSpace(self.ClothingCF))
     self.Clothing.PrimaryPart.Anchored = false
     self.Weld.Part1 = self.Actor.PrimaryPart
+    self.Actor.PrimaryPart.Transparency = 1
 
     self.Mounted = true
 end
 
 function EntityObject:TakeoffCloth()
     if (not self.Mounted) then return end 
-    -- print("Dismount", self.Id)
 
     self.Weld.Part1 = nil 
     self.Clothing.PrimaryPart.Anchored = true 
     CacheManager:CacheModel(self.Clothing)
+    self.Actor.PrimaryPart.Transparency = .5
 
     self.Mounted = false
 end

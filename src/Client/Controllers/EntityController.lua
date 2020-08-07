@@ -43,7 +43,7 @@ function EntityController:RenderEntities(Actors)
                 table.insert(RenderedEntities, newEntity)
                 CacheManager:AddCache(newEntity)
             else
-                warn("Untracked Entity: ", Actor.PrimaryPart:GetFullName())
+                warn("Untracked Entity: ", Actor:GetFullName())
             end
         end 
     end
@@ -148,7 +148,6 @@ function EntityController:GetEntitiesToRender()
     -- self.Shared.TableUtil.Print(reorderedActors, "ReorderedAxtor", true)
 
     for _, Array in pairs(reorderedActors) do
-        print(#Render, EntitySettings.MaxRenderCount)
         if (Array[2] <= EntitySettings.MaxRenderDist) then 
             if ((TotalRenders) <= EntitySettings.MaxRenderCount) then
                 local isExist = false 

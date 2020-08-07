@@ -33,6 +33,8 @@ function EntityService:AddEntity(Actor, Clothing, AnimDictionary, ClothingCF)
 
     AllEntities[Id] = newEntity
     CollectionService:AddTag(Actor, EntityCollectionTag) 
+
+    return Id
 end 
 
 function EntityService:RemoveEntity(Id)

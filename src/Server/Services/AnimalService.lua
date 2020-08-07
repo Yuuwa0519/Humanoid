@@ -18,6 +18,7 @@ local Rand = Random.new()
 local AnimalService = {Client = {}}
 
 function AnimalService:SpawnNPC()
+    print("Spawning NPC")
     local chosen = Rand:NextInteger(1, #AnimalList)
 
     local newNPC = AnimalList[chosen].new() 
@@ -34,7 +35,7 @@ function AnimalService:Start()
     self:ConnectClientEvent("SpawnNPC", function(plr)
         self:SpawnNPC()
     end)
-    self:StartLogic()
+    self:SpawnNPC()
 end
 
 function AnimalService:Init()

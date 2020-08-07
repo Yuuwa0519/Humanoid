@@ -2,6 +2,54 @@
 -- Yuuwa0519
 -- July 11, 2020 (Updated on July 26th, 2020)
 
+--[[
+	Documentation
+	
+	Constructors:
+		Humanoid.new(Rig)
+			->Make Sure to Have All Parts Except for base Part to be Massless
+
+    Methods:
+		Humanoid:Activate()
+			-> Starts Calculating the Force of Vector Force to move in consistent speed
+
+		Humanoid:Deactivate()
+			-> Stops the calculation + disconnect all events made in Humanoid:Activate() 
+			-> Call this When You Don't need the intense calculation to be running (For Ex, if the Humanoid is Going to be Idle for Few moments)
+		
+		Humanoid:Move(Vector3(UnitVector))
+			-> Same as Roblox Humanoid:Move()
+
+			Ex: Humanoid:Move(Vector3.new(0, 0, -1))
+
+		Humanoid:MoveTo(Vector3(Destination), number(TimeOut))
+			-> Same as Roblox Humanoid:MoveTo()
+			-> Second Parameter Defaults to 8 Seconds
+			
+			Ex: Humanoid:MoveTo(Vector3.new(100,0,100), 12)
+			
+		Humanoid:Face(Vector3(Unit Vector))
+			-> Make the Humanoid Face In Direction of Unit Vector
+
+			Ex: Humanoid:Face(Camera.CFrame.LookVector))
+
+		Humanoid:FaceTo(Vector3(Point to Look At))
+			-> Make the Humanoid Face Towards Something
+
+			Ex: Humanoid:FaceTo(Vector3.new(0, 500, 700))
+
+        Humanoid:Jump()
+			-> Humanoid will Jump XD
+
+	Events: 
+		ScriptSignal: Humanoid.MoveToFinished()
+			-> Event That Fires when MoveTo() is called, and is done moving
+		
+	State: 
+		Boolean: Humanoid.ReachedTarget
+			-> Will be True if Previous Humanoid:MoveTo() Was Successful
+]]
+
 --Service
 local RunService = game:GetService("RunService")
 
@@ -26,30 +74,30 @@ end
 local Humanoid = {}
 Humanoid.__index = Humanoid
 
-function Humanoid.new(Character, BAttach, RAttach, VForce, JForce, AOrientation)
+function Humanoid.new(Character, RAttach, Drag, WalkSpeed)
 	--[[Components
 		VectorForce;
 		(Not Used)BodyGyro; --Differed Due to Performance Problems
 		AllignOrientation;
-		AnimationController; --Differed Due to Switching to Client-Based
+		AnimationController; --Differed Due to Switching to Entity Render System
 	]]
 
-	local HumBase = Character:WaitForChild("HumanoidBase")
-	-- local BaseAttach = HumBase:FindFirstChild("Base")
-	-- local RptAttach = HumBase:FindFirstChild("Rot")
+	local HumBase = Character.PrimaryPart
 
-	local BaseAttach = BAttach or Instance.new("Attachment")
+	local BaseAttach = HumBase:FindFirstChild("BaseAttach") or Instance.new("Attachment")
 	local RotAttach = RAttach or Instance.new("Attachment")
 
-	local VF = VForce or Instance.new("VectorForce")
-	local JF = JForce or Instance.new("VectorForce")
-	local AO = AOrientation or Instance.new("AlignOrientation")
+	local VF = HumBase:FindFirstChild("MoveVectorForce") or Instance.new("VectorForce")
+	local JF = HumBase:FindFirstChild("JumpVectorForce") or Instance.new("VectorForce")
+	local AO = HumBase:FindFirstChild("CharacterAlignOrientation") or Instance.new("AlignOrientation")
 
 	BaseAttach.Name = "BaseAttach"
 	RotAttach.Name = "RotAttach"
 
 	VF.Attachment0 = BaseAttach
 	VF.ApplyAtCenterOfMass = true
+	VF.Force = Vector3.new()
+	VF.Enabled = false
 	VF.Name = "MoveVectorForce"
 
 	JF.Attachment0 = BaseAttach
@@ -81,8 +129,8 @@ function Humanoid.new(Character, BAttach, RAttach, VForce, JForce, AOrientation)
 		--Physic Component
 		Direction = Vector3.new(); --Move Direction
 		GoalPos = Vector3.new(); --where to look if AutoRotate
-		DragForce = 20;
-		WalkSpeed = 120;
+		DragForce = (Drag or 20);
+		WalkSpeed = (WalkSpeed or 120);
 		Mass = 0;
 
 		AutoRotate = true; 
@@ -115,7 +163,7 @@ function Humanoid:CreateHumFromClient(me, Character, RotationAttach)
 	--Confirm the Player has NetworkOwner
 	local OwnsNetwork = false
 
-	_, e = pcall(function()
+	local _, e = pcall(function()
 		OwnsNetwork = Character.PrimaryPart:GetNetworkOwner() == me 
 	end) 
 
@@ -124,14 +172,7 @@ function Humanoid:CreateHumFromClient(me, Character, RotationAttach)
 		local HumBase = Character:WaitForChild("HumanoidBase", 8)
 
 		if (HumBase) then
-			local BaseAttach = HumBase:FindFirstChild("BaseAttach")
-			local RotAttach = RotationAttach
-
-			local VF = HumBase:FindFirstChild("MoveVectorForce")
-			local JF = HumBase:FindFirstChild("JumpVectorForce")
-			local AO = HumBase:WaitForChild("CharacterAlignOrientation")
-
-			return self.new(Character, BaseAttach, RotAttach, VF, JF, AO)
+			return self.new(Character, RotationAttach)
 		end
 	else 
 		debugPrint(true, "The Local Player Needs Network Owner to Handle Humanoid!")
@@ -258,7 +299,6 @@ function Humanoid:GetMass(considerGravity)
 end
 
 function Humanoid:Activate()
-	-- self.Base.BrickColor = BrickColor.White()
 	self.VF.Enabled = true
 	if (self.AutoRotate) then
 		self.VF.RelativeTo = Enum.ActuatorRelativeTo.Attachment0

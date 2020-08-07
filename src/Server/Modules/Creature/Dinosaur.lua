@@ -15,6 +15,9 @@ local CreatureEntity = CreatureEntities.Dinosaur
 --Var 
 local DinosaurAnimations = {}
 local DinosaurEntityOffset = CFrame.new()
+local DinosaurBase = {
+    Specie = "Dinosaur"
+}
 
 local Rand = Random.new()
 
@@ -22,19 +25,21 @@ local Dinosaur = {}
 Dinosaur.__index = Dinosaur
 
 function Dinosaur.new()
-    local newDino = setmetatable(BaseCreature.new(CreatureEntity, DinosaurAnimations, DinosaurEntityOffset), Dinosaur)
-    
+    local newDino = setmetatable(BaseCreature.new(CreatureEntity, DinosaurAnimations, DinosaurEntityOffset, DinosaurBase), Dinosaur)
+
     return newDino
 end
 
 function Dinosaur:StartLogic()
+    self.Actor.Parent = workspace.Characters
     self.Running = true
+    self.Humanoid:Activate()
     self.Shared.Thread.SpawnNow(function()
         while (self.Running) do
             local X = Rand:NextInteger(-50, 50)
             local Z = Rand:NextInteger(-50, 50)
 
-            local nextPos = self.PrimaryPart.Position + Vector3.new(X, 0, Z)
+            local nextPos = self.Actor.PrimaryPart.Position + Vector3.new(X, 0, Z)
             self.Humanoid:MoveTo(nextPos, 8)
             self.Humanoid.MoveToFinished:Wait()
             wait(1)

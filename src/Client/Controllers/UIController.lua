@@ -5,10 +5,9 @@
 --Services
 local CollectionService = game:GetService("CollectionService")
 
---Vars
+--Var
 local PlayerGui
-local MainUI
-
+local Main
 
 local UIController = {}
 
@@ -16,20 +15,19 @@ function UIController:Setup()
     local UICollection = CollectionService:GetTagged("UICollection")
 
     for _, UI in pairs(UICollection) do 
-        self.Modules.UIModule[UI.Name]:Setup()
+        self.Modules.UIModule[UI.Name]:Setup(UI, Main)
     end 
 end
 
 function UIController:Start()
-    PlayerGui = self.Player:WaitForChild("PlayerGui")
-    MainUI = PlayerGui:WaitForChild("Main")
+    repeat 
+        wait()
+    until _G.GuiLoaded == true 
 
+    PlayerGui = self.Player:WaitForChild("PlayerGui")
+    Main = PlayerGui.Main
+    
     self:Setup()
 end
-
-function UIController:Init()
-	
-end
-
 
 return UIController
