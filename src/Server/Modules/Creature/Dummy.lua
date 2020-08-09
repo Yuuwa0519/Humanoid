@@ -2,25 +2,22 @@
 -- Yuuwa0519
 -- August 1, 2020
 
---Service 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
 --Module
 local BaseCreature
 
---Obj
-local CreatureEntities = ReplicatedStorage.EntityObjects
-local CreatureEntity = CreatureEntities.Dummy
-
 --Var 
-local DummyAnimations = {}
-local DummyEntityOffset = CFrame.new()
 local DummyBase = {
-    Specie = "Human";
+    Specie = "Dummy";
+
+    ClothingId = "Dummy";
+    ClothingCF = CFrame.new();
+    
+    AnimDictionary = {};
+
 
     HumanoidSettings = {
         WalkSpeed = 120;
-        Drag = 50;
+        Drag = 20;
     };
 }
 
@@ -30,7 +27,7 @@ local Dummy = {}
 Dummy.__index = Dummy
 
 function Dummy.new()
-    local newDino = setmetatable(BaseCreature.new(CreatureEntity, DummyAnimations, DummyEntityOffset, DummyBase), Dummy)
+    local newDino = setmetatable(BaseCreature.new(CreatureEntity, DummyBase), Dummy)
 
     return newDino
 end

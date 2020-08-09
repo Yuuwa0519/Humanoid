@@ -2,21 +2,20 @@
 -- Yuuwa0519
 -- August 1, 2020
 
---Service 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
 --Module
 local BaseCreature
-
---Obj
-local CreatureEntities = ReplicatedStorage.EntityObjects
-local CreatureEntity = CreatureEntities.Yuuwa0519
 
 --Var 
 local YuuwaAnimations = {}
 local YuuwaEntityOffset = CFrame.new()
 local YuuwaBase = {
     Specie = "Yuuwa";
+
+    ClothingId = "Yuuwa0519";
+    ClothingCF = CFrame.new();
+    
+    AnimDictionary = {};
+
 
     HumanoidSettings = {
         WalkSpeed = 120;
@@ -30,7 +29,7 @@ local Yuuwa = {}
 Yuuwa.__index = Yuuwa
 
 function Yuuwa.new()
-    local newDino = setmetatable(BaseCreature.new(CreatureEntity, YuuwaAnimations, YuuwaEntityOffset, YuuwaBase), Yuuwa)
+    local newDino = setmetatable(BaseCreature.new(CreatureEntity, YuuwaBase), Yuuwa)
 
     return newDino
 end

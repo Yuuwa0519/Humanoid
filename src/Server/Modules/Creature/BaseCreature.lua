@@ -20,35 +20,41 @@ local function mergeTable(t1, t2)
     return t1
 end
 
-function BaseCreature.new(Clothing, AnimDict, EntityOffset, baseArray)
+function BaseCreature.new(Clothing, BaseArray)
     local Actor = HumBase:Clone()
-    local EntityId = EntityService:AddEntity(Actor, Clothing, AnimDict, EntityOffset)
+    local EntityId = EntityService:AddEntity(Actor, BaseArray)
 
     local creatureArray = {
         EntityId = EntityId;
         Running = false;
         Actor = Actor;
 
-        Humanoid = BaseCreature.Shared.Humanoid.new(Actor, nil, baseArray.HumanoidSettings);
+        Humanoid = BaseCreature.Shared.Humanoid.new(Actor, nil, BaseArray.HumanoidSettings);
+        _Maid = Maid.new();
     }
     local merged = mergeTable(creatureArray, (baseArray or {}))
 
     local self = setmetatable(merged, BaseCreature)
 
-    return self
-end
-
-function BaseCreature:Setup()
-    local diedCon 
-    diedCon = self.Humanoid.Died:Connect(function()
-        diedCon:Disconnect()
+    self._Maid.diedCon = self.Humanoid.Died:Connect(function()
+        self._Maid.diedCon:Disconnect()
         self.Running = false
         self.Actor = nil
         print("Ref Deleted!")
     end)
+    self._Maid:GiveTask(self.Actor)
 
-    self.Actor.PrimaryPart:SetNetworkOwner(nil)
+    return self
+end
+
+function BaseCreature:Setup(owner)
+    self.Actor.PrimaryPart:SetNetworkOwner(owner or nil)
 end 
+
+function BaseCreature:Destroy()
+    EntityService:RemoveEntity(self.EntityId)
+    self._Maid:Destroy()
+end
 
 function BaseCreature:PlayAnimation(Name)
     EntityService:FireAnimation(self.EntityId, Name, nil)
@@ -56,6 +62,7 @@ end
 
 function BaseCreature:Init()
     EntityService = BaseCreature.Services.EntityService
+    Maid = self.Shared.Maid
 end
 
 

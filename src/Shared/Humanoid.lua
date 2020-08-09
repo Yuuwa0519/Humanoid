@@ -52,15 +52,18 @@
 
 --Service
 local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
 
---Var
+--Module
 local Maid
 local Event
 
+--Var
+
+--Setting
 local Debug = false
 
 --Function
-
 local function debugPrint(isWarn, ...)
 	if (not Debug) then return end 
 
@@ -117,6 +120,9 @@ function Humanoid.new(Character, RAttach, HumSettings)
 	AO.Parent = HumBase
 	-- BG.Parent = HumBase
 
+	local WalkSpeed = HumSettings and HumSettings.WalkSpeed or 120
+	local Drag = HumSettings and HumSettings.Drag or 60
+
 	local self = setmetatable({	
 		Char = Character;
 		Base = HumBase;
@@ -128,17 +134,22 @@ function Humanoid.new(Character, RAttach, HumSettings)
 
 		--Physic Component
 		Direction = Vector3.new(); --Move Direction
+		OrigDirection = Vector3.new(); --Original Move Direction, When Autorotate is True
 		GoalPos = Vector3.new(); --where to look if AutoRotate
-		DragForce = (HumSettings.Drag or 60);
-		WalkSpeed = (HumSettings.WalkSpeed or 120);
+		
+		DragForce = Drag;
+		WalkSpeed = WalkSpeed;
 		Mass = 0;
 
 		AutoRotate = true; 
-		TargetReachDist = 5;		
-
+		TargetReachDist = 5;	
+		
+		RayIgnoreList = {HumBase};
+		RayParam = RaycastParams.new();
 		--State 
 		ReachedTarget = true;
 		Locked = false;
+		IsGrounded = true;
 
 		--Humanoid Components
 		Health = 100;
@@ -166,38 +177,29 @@ function Humanoid.new(Character, RAttach, HumSettings)
 	return self
 end
 
-function Humanoid:CreateHumFromClient(me, Character, RotationAttach)
-	if (RunService:IsServer()) then 
-		debugPrint(true, "CreateHumFromClient() Needs to Be Called From Client!!")
-		return 
+function Humanoid:AddRayIgnore(array)
+	for _, obj in pairs(array) do 
+		table.insert(self.RayIgnoreList, obj)
 	end
+	self.RayParam.FilterDescendantsInstances = self.RayIgnoreList
+end
 
-	--Confirm the Player has NetworkOwner
-	local OwnsNetwork = false
+function Humanoid:SetRayIgnoreCollision(name)
+	self.RayParam.CollisionGroup = name
+end
 
-	local _, e = pcall(function()
-		OwnsNetwork = Character.PrimaryPart:GetNetworkOwner() == me 
-	end) 
-
-	if (OwnsNetwork) then
-		--Get Components
-		local HumBase = Character:WaitForChild("HumanoidBase", 8)
-
-		if (HumBase) then
-			return self.new(Character, RotationAttach)
-		end
-	else 
-		debugPrint(true, "The Local Player Needs Network Owner to Handle Humanoid!")
-		debugPrint(true, e)
-	end
+function Humanoid:GetMass(considerGravity)
+	return considerGravity and self.Base:GetMass() * workspace.Gravity or self.Base:GetMass()
 end
 
 function Humanoid:Jump()
-	local jumpPower = Vector3.new(0, self:GetMass() * 3000, 0)
+	if (self.IsGrounded) then
+		local jumpPower = Vector3.new(0, self:GetMass() * 3000, 0)
 
-	self.JF.Force = jumpPower
-	RunService.Heartbeat:Wait()
-	self.JF.Force = Vector3.new()
+		self.JF.Force = jumpPower
+		RunService.Heartbeat:Wait()
+		self.JF.Force = Vector3.new()
+	end
 end
 
 function Humanoid:Move(V3)
@@ -219,6 +221,7 @@ function Humanoid:Move(V3)
 	if (self.AutoRotate) then 
 		if (normalized.Magnitude > 0) then
 			newV3 = Vector3.new(0, 0, -1)
+			self.OrigDirection = normalized
 		else 
 			newV3 = normalized
 		end
@@ -281,6 +284,19 @@ function Humanoid:FaceTo(TargCF)
 end
 
 function Humanoid:Calculate()
+	do 
+		local origin = self.BaseAttach.WorldCFrame:PointToWorldSpace(Vector3.new(0, -(self.Base.Size.Y / 2) + 0.1, 0))
+		local direction = Vector3.new(0, -1, 0)
+		local rayResult = workspace:Raycast(origin, direction, self.RayParam)
+
+		if (rayResult) then 
+			self.IsGrounded = true
+		else 
+			self.IsGrounded = false
+		end
+	end
+
+	--Check Grounded
 	--F = MA
 	--Drag = VC
 
@@ -293,9 +309,7 @@ function Humanoid:Calculate()
 		vel = self.BaseAttach.WorldCFrame:VectorToObjectSpace(vel)
 
 		--Rotate towards Goal
-		local nonHeightTarg = Vector3.new(self.GoalPos.X, self.Base.Position.Y, self.GoalPos.Z)
-		local look = (nonHeightTarg - self.Base.Position).Unit
-		self:Face(look)
+		self:Face(self.OrigDirection)
 	end
 
 
@@ -304,10 +318,6 @@ function Humanoid:Calculate()
 	local FinalForce = Force - Drag
 
 	self.VF.Force = FinalForce
-end
-
-function Humanoid:GetMass(considerGravity)
-	return considerGravity and self.Base:GetMass() * workspace.Gravity or self.Base:GetMass()
 end
 
 function Humanoid:Activate()
@@ -350,7 +360,7 @@ function Humanoid:DeadSequence()
 	end 
 	
 	warn("Humanoid Death!")
-	self.Shared.TableUtil.Print(self, "Humanoid")
+	-- self.Shared.TableUtil.Print(self, "Humanoid")
 end
 
 function Humanoid:Init() 

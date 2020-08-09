@@ -3,7 +3,6 @@
 -- July 29, 2020
 
 --Services 
-local CollectionService = game:GetService("CollectionService")
 
 --Modules 
 local EntityService 
@@ -17,79 +16,136 @@ local Camera = workspace.CurrentCamera
 
 --Var 
 local RenderedEntities = {}
+local ForceRender = {}
+
+local isEntityReady = false
+local EntityReady
+
+--Settings 
+local DebugMode = false 
 
 local EntityController = {}
+
+local function debugPrint(isWarn, ...)
+    if (not DebugMode) then return end
+    if (isWarn) then 
+        warn(...)
+    else 
+        print(...)
+    end
+end
 
 function EntityController:GetEntityStats()
     return #RenderedEntities
 end
 
-function EntityController:RenderEntities(Actors)
-    local renderStart = time()
-    for _, Actor in pairs(Actors) do 
-        local Entity = CacheManager:GetCache(Actor)
+function EntityController:AddForceRender(Id)
+    table.insert(ForceRender, Id)
+end
 
-        if (Entity) then
-            --Reuse Cache
-            if (not Entity.DoNotLoad) then
-                Entity:WearCloth()
-                table.insert(RenderedEntities, Entity)
-            else
-                warn("Entity Still Remaining in Cache Even Though Do Not Load!")
-            end
-        else
-            --First Time Creating Enti
-            local EntityData = EntityService:DownloadEntity(Actor)
-
-            if (EntityData) then 
-                local newEntity = EntityObject.new(EntityData)
-                newEntity:WearCloth()
-
-                table.insert(RenderedEntities, newEntity)
-                CacheManager:AddCache(newEntity)
-            else
-                warn("Untracked Entity: ", Actor:GetFullName())
-            end
-        end 
+function EntityController:RemoveForceRender(Id)
+    local isExist = false
+    for i, v in pairs(ForceRender) do 
+        if (v == Id) then
+            self.Shared.TableUtil.FastRemove(ForceRender, i)
+            isExist = true
+            break
+        end
     end
+
+    if (not isExist) then 
+        warn("Attempt to Remove Non-Existant Entity Id from Force Render", Id)
+    end
+end
+
+function EntityController:RenderEntities(Arrays)
+    local renderStart = time()
+    local done = {}
+
+    for i, Array in pairs(Arrays) do 
+        local CEntity = CacheManager:GetCache(Array.Id)
+
+        if (CEntity) then
+            --Reuse Cache
+            --print("Reuse Cache")
+            CEntity:WearCloth()
+            table.insert(RenderedEntities, CEntity.Id)
+            table.insert(done, Array.Id)
+        else
+            self.Shared.Thread.Spawn(function()
+                --First Time Creating Entity
+                local CEntityData = EntityService:DownloadEntity(Array.Id)
+                
+                if (CEntityData) then 
+                    local newEntity = EntityObject.new(CEntityData)
+                    newEntity:WearCloth()
+
+                    table.insert(RenderedEntities, newEntity.Id)
+                    CacheManager:AddCache(newEntity)
+
+                    table.insert(done, Array.Id)
+                else
+                    warn("Untracked Entity: ", Array.Id)
+                end
+            end)
+        end
+    end
+
+    repeat 
+        wait(.5)
+    until #done == #Arrays
+
     print("Render Duration", time() - renderStart)
 end
 
-function EntityController:DerenderEntities(Actors)
-    local renderStart = time()
-    for _, Actor in pairs(Actors) do 
+function EntityController:DerenderEntities(Arrays)
+    for _, Array in pairs(Arrays) do 
         --Derender, Cache
-        local Entity = CacheManager:GetCache(Actor)
+        local CEntity = CacheManager:GetCache(Array.Id)
 
-        if (Entity) then 
-            Entity:TakeoffCloth()
-            CacheManager:AddCache(Entity)
-            
-            for i, candidate in pairs(RenderedEntities) do
-                if (candidate.Id == Entity.Id) then 
-                    table.remove(RenderedEntities, i)
-                    break
-                end
-            end
+        if (CEntity) then 
+            CEntity:TakeoffCloth()
+        end
+
+        local candidate = nil 
+
+        for i, id in pairs(RenderedEntities) do 
+            if (id == Array.Id) then 
+                candidate = i
+            end 
+        end
+
+        if (candidate) then 
+            self.Shared.TableUtil.FastRemove(RenderedEntities, candidate)
         end
     end
-    print("Derender Duration", time() - renderStart)
 end 
 
 function EntityController:GetEntitiesToRender()
-    local getStart = time()
-    local CamPos = Camera.CFrame.Position
-    local allEntityActors = CollectionService:GetTagged(EntitySettings.EntityTag)
-    local reorderedActors = {}
+    local CamCF = Camera.CFrame
+    --Just for test, use torso pos
+    do
+        local char = self.Player.Character 
 
-    for _, Actor in pairs(allEntityActors) do
-        local dist = (Actor.PrimaryPart.Position - CamPos).Magnitude
+        if (char) then
+            if (char.PrimaryPart) then 
+                CamCF = char:GetPrimaryPartCFrame()
+            end 
+        end
+    end
+    local CamPos = CamCF.Position
+    
+    local allEntities = EntityService:GetEntities(CamPos, EntitySettings.MaxRenderDist)
+    local reorderedEntities = {}
 
-        table.insert(reorderedActors, {Actor, dist})
+    for _, Array in pairs(allEntities) do
+        local dist = (Array.Pos - CamPos).Magnitude
+
+        table.insert(reorderedEntities, {Array, dist})
     end 
 
-    table.sort(reorderedActors, function(a, b)
-        return (a[2] < b[2])
+    table.sort(reorderedEntities, function(a, b)
+        return a[2] < b[2]   
     end)
 
     --Separate it into Render and Derender Group
@@ -97,37 +153,78 @@ function EntityController:GetEntitiesToRender()
     local Derender = {}
     local TotalRenders = 0
 
-    for _, Array in pairs(reorderedActors) do
-        if (Array[2] <= EntitySettings.MaxRenderDist) then 
-            if ((TotalRenders) <= EntitySettings.MaxRenderCount) then
-                local isExist = false 
+    --[[
+        --Note Cause I keep Forgetting and Debug For Nothing
+        Initially, Total Renders is 0. 
+        Then, On Render Iteration, It will Count Even if its Already in Rendered Entities, 
+        Which WIll In the end account for both newly rendered and already rendered entities. 
 
-                for _, Entity in pairs(RenderedEntities) do 
-                    if (Entity.Actor == Array[1]) then 
-                        isExist = true
-                        break 
-                    end
-                end
 
-                if (not isExist) then
-                    table.insert(Render, Array[1])
-                -- else
-                --     warn("Already Render")
+    ]]
+
+    for i, Id in pairs(RenderedEntities) do 
+        local isExist = false 
+        for _, Array in pairs(reorderedEntities) do 
+            if (Array[1].Id == Id) then 
+                isExist = true
+                break
+            end
+        end
+
+        if (not isExist) then 
+            table.insert(Derender, {Id = Id})
+        end
+    end
+
+    for i, Array in pairs(reorderedEntities) do
+        local canRender = TotalRenders <= EntitySettings.MaxRenderCount 
+
+        if (canRender) then
+            local isExist = false 
+
+            for _, v in pairs(RenderedEntities) do 
+                if (v == Array[1].Id) then 
+                    isExist = true
+                    break 
                 end
-                TotalRenders += 1
-            else 
-                -- warn("MaxRender")
-                table.insert(Derender, Array[1])
-            end 
+            end
+            if (not isExist) then
+                table.insert(Render, {Id = Array[1].Id})
+            end
+            TotalRenders += 1
         else 
-            -- warn("Too Far")
-            table.insert(Derender, Array[1])
+            -- warn("MaxRender")
+            local isExist = false 
+
+            for _, v in pairs(Derender) do 
+                if (v.Id == Array[1].Id) then 
+                    warn("Contradictory With Derender! Derendering Twice")
+                    isExist = true
+                    break
+                end
+            end
+
+            if (not isExist) then
+                table.insert(Derender, {Id = Array[1].Id})
+            end
         end
     end 
 
-    -- self.Shared.TableUtil.Print(Render, "Render", false)
-    -- self.Shared.TableUtil.Print(Derender, "Derender", false)
-    print("Render Get Duration: ", time() - getStart)
+    for _, Id in pairs(ForceRender) do 
+        local isExist = false 
+
+        for _, v in pairs(RenderedEntities) do 
+            if (v == Id) then 
+                isExist = true
+                break 
+            end
+        end
+        if (not isExist) then
+            table.insert(Render, {Id = Id})
+        end
+        TotalRenders += 1
+    end
+
     return Render, Derender
 end 
 
@@ -140,8 +237,6 @@ function EntityController:Start()
     local loopCount = 1
 
     while (true) do
-        warn("------------------------------------------------------------")
-        local renderStart = time()
         local Render, Derender = self:GetEntitiesToRender()
         
         self:DerenderEntities(Derender)
@@ -149,9 +244,18 @@ function EntityController:Start()
 
         loopCount += 1 
         if (loopCount % 10) == 0 then 
-            CacheManager:CollectGarbage(Camera.CFrame.Position)
+            local collectedIds = CacheManager:CollectGarbage(Camera.CFrame.Position)
+            for _, Id in pairs(collectedIds) do 
+                local isExist = false 
+                for i, RenderedId in pairs(RenderedEntities) do 
+                    if (Id == RenderedId) then 
+                        self.Shared.TableUtil.FastRemove(RenderedEntities, Id)
+                        break
+                    end
+                end
+            end
         end
-        print("Total Render Duration: ", time() - renderStart)
+
         wait(EntitySettings.RenderRate)
     end 
 end

@@ -15,17 +15,11 @@ local Cache = {}
 
 local CacheManager = {}
 
-function CacheManager:AddCache(Entity, forceOverride)
+function CacheManager:AddCache(Entity)
     local isExist = Cache[Entity.Id]
-
+    
     if (not isExist) then
         Cache[Entity.Id]  = Entity 
-    elseif (forceOverride) then
-        --Override Cache 
-        self:RemoveCache(isExist.Id)
-        Cache[Entity.Id] = Entity  
-    -- else 
-    --     warn("Cache Already Exist")   
     end
 end
 
@@ -42,62 +36,58 @@ function CacheManager:RemoveCache(Id)
     end
 end 
 
-function CacheManager:GetCache(identifier)
-    if (type(identifier) == "userdata") then
-        for _, Entity in pairs(Cache) do 
-            if (Entity.Actor == identifier) then 
-                return Entity 
-            end 
-        end 
-
-        return nil
-    else
-        return Cache[identifier]
-    end
+function CacheManager:GetCache(Id)
+    return Cache[Id]
 end
 
 function CacheManager:CacheModel(model)
-    model.Parent = CacheFolder
+    if (model) then
+        model.Parent = CacheFolder
+    else 
+        warn("Called CacheModel on Invalid Model!")
+    end
+    -- print("CacheFolder Count", #CacheFolder:GetChildren())
 end
 
 function CacheManager:CollectGarbage(camPos)
-    local renderStart = time()
-    local RemovedCacheCount = 0
+    local RemovedCacheId = {}
+    local trackedCache = {}
     
     for _, Entity in pairs(Cache) do 
+        local Id = Entity.Id
+
         if (not Entity.DoNotLoad) then 
             if (Entity.Actor) then
                 if (Entity.Clothing) then 
                     local dist = (Entity.Actor.PrimaryPart.Position - camPos).Magnitude
 
                     if (dist > self.Modules.Entity.EntitySettings.CacheRemoveDist) then 
-                        -- warn("Destroy Cause far Dist")
                         self:RemoveCache(Entity.Id)
-                        RemovedCacheCount += 1
+                        table.insert(RemovedCacheId, Id)
                     end
                 else
                     warn("Destroy Cause no Clothing")
                     --Remove Cache if For Some Reason Clothing is Nil
                     self:RemoveCache(Entity.Id)
-                    RemovedCacheCount += 1
+                    table.insert(RemovedCacheId, Id)
                 end
             else 
                 warn("Destroy Cause No Actor")
                 --Remove Cache if Actor is Nil
                 self:RemoveCache(Entity.Id)
-                RemovedCacheCount += 1
+                table.insert(RemovedCacheId, Id)
             end
         else 
-            warn("Found Do Not Load Entity")
             self:RemoveCache(Entity.Id)
-            RemovedCacheCount += 1
+            table.insert(RemovedCacheId, Id)
         end
     end
 
-    if (RemovedCacheCount > 0) then
-        warn("Collected " .. RemovedCacheCount .. " Cache!")
+    if (#RemovedCacheId > 0) then
+        warn("Collected " .. #RemovedCacheId .. " Cache!")
     end
-    print("CollectGarbageDuration", time() - renderStart)
+
+    return RemovedCacheId
 end
 
 return CacheManager

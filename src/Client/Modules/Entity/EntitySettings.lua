@@ -6,9 +6,9 @@
 
 local EntitySettings = {
     RenderRate = 2;
-    EntityTag = "_Entity";
+    EntityTag = "_Entity"; 
     MaxRenderDist = 100;
-    MaxRenderCount = 50;
+    MaxRenderCount = 30;
     CacheRemoveDist = 200;
 }
 

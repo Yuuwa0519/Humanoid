@@ -2,6 +2,9 @@
 -- Yuuwa0519
 -- August 1, 2020
 
+--Services
+local RunService = game:GetService("RunService")
+
 --Module 
 local Creature
 
@@ -31,10 +34,27 @@ function AnimalService.Client:GetTotalNPC()
 end
 
 function AnimalService:Start()
-    self:ConnectClientEvent("SpawnNPC", function(plr)
-        self:SpawnNPC()
-    end)
-    self:SpawnNPC()
+    -- self:ConnectClientEvent("SpawnNPC", function(plr)
+    --     self:SpawnNPC()
+    -- end)
+
+    -- if (not RunService:IsStudio()) then --Studio Can't Handle So :P
+    --     for i = 1, 400 do
+    --         self:SpawnNPC()
+
+    --         if (i % 100 == 0) then 
+    --             wait(1)
+    --         end
+    --     end
+    -- else 
+    --     -- for i = 1, 100 do
+    --     --     self:SpawnNPC()
+
+    --     --     if (i % 100 == 0) then 
+    --     --         wait(1)
+    --     --     end
+    --     -- end
+    -- end
 end
 
 function AnimalService:Init()

@@ -2,21 +2,20 @@
 -- Yuuwa0519
 -- August 1, 2020
 
---Service 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
 --Module
 local BaseCreature
 
---Obj
-local CreatureEntities = ReplicatedStorage.EntityObjects
-local CreatureEntity = CreatureEntities.Dinosaur
-
 --Var 
 local DinosaurAnimations = {}
-local DinosaurEntityOffset = CFrame.new()
+
 local DinosaurBase = {
     Specie = "Dinosaur";
+
+    ClothingId = "Dinosaur";
+    ClothingCF = CFrame.new();
+    
+    AnimDictionary = {};
+
 
     HumanoidSettings = {
         WalkSpeed = 120;
@@ -30,7 +29,7 @@ local Dinosaur = {}
 Dinosaur.__index = Dinosaur
 
 function Dinosaur.new()
-    local newDino = setmetatable(BaseCreature.new(CreatureEntity, DinosaurAnimations, DinosaurEntityOffset, DinosaurBase), Dinosaur)
+    local newDino = setmetatable(BaseCreature.new(CreatureEntity, DinosaurBase), Dinosaur)
 
     return newDino
 end

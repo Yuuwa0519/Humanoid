@@ -4,6 +4,8 @@
 
 --Services
 local CollectionService = game:GetService("CollectionService")
+local StarterGui = game:GetService("StarterGui")
+local RunService = game:GetService("RunService")
 
 --Var
 local PlayerGui
@@ -26,6 +28,17 @@ function UIController:Setup()
 end
 
 function UIController:Start()
+    while (true) do 
+        local s, e = pcall(function()
+            StarterGui:SetCore("ResetButtonCallback", false)
+        end)
+
+        if (s) then
+            break
+        end
+        RunService.Heartbeat:Wait()
+    end
+    
     repeat 
         wait()
     until _G.GuiLoaded == true 

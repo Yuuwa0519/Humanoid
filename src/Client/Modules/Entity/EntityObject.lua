@@ -2,9 +2,13 @@
 -- Yuuwa0519
 -- July 30, 2020
 
+--Obj
+local EntityFolder = workspace:WaitForChild("Entities")
+
 --Module
 local Maid
 local CacheManager
+local AssetManager
 
 local EntityObject = {}
 EntityObject.__index = EntityObject
@@ -12,14 +16,14 @@ EntityObject.__index = EntityObject
 function EntityObject.new(EntityData)
     local Id = EntityData.Id 
     local Actor = EntityData.Actor 
-    local ClothingOrig = EntityData.Clothing
+    local ClothingOrig = AssetManager:GetAsset(EntityData.ClothingId)
     local AnimDict = EntityData.AnimDict
 
     local ClothingCF = EntityData.ClothingCF
 
     if (Actor) then 
         if (ClothingOrig) then
-            local Clothing  = ClothingOrig:Clone()
+            local Clothing = ClothingOrig:Clone()
             local AnimController = Instance.new("AnimationController")
             local Weld = Instance.new("WeldConstraint")
 
@@ -46,6 +50,12 @@ function EntityObject.new(EntityData)
             }, EntityObject)
 
             self._Maid:GiveTask(self.Clothing)
+            self._Maid:GiveTask(self.Weld)
+            self._Maid.OnDestroy = Clothing.AncestryChanged:Connect(function(old, new)
+                if (new == nil) then 
+                    self:Destroy()
+                end
+            end)
 
             return self
         else 
@@ -64,24 +74,31 @@ function EntityObject:WearCloth()
     end 
 
     --Set CFrame
-    self.Clothing.Parent = self.Actor
     self.Clothing:SetPrimaryPartCFrame(self.Actor:GetPrimaryPartCFrame():ToWorldSpace(self.ClothingCF))
     self.Clothing.PrimaryPart.Anchored = false
     self.Weld.Part1 = self.Actor.PrimaryPart
     self.Actor.PrimaryPart.Transparency = 1
+    self.Clothing.Parent = EntityFolder
 
     self.Mounted = true
-end
 
+    -- print("#EntityFolder", #EntityFolder:GetChildren())
+end
+ 
 function EntityObject:TakeoffCloth()
     if (not self.Mounted) then return end 
 
-    self.Weld.Part1 = nil 
-    self.Clothing.PrimaryPart.Anchored = true 
-    CacheManager:CacheModel(self.Clothing)
-    self.Actor.PrimaryPart.Transparency = .5
-
-    self.Mounted = false
+    if (self.Clothing) then
+        if (self.Clothing.PrimaryPart) then
+            self.Clothing.PrimaryPart.Anchored = true 
+            CacheManager:CacheModel(self.Clothing)
+            self.Mounted = false
+        else 
+            warn("Not Took Off Cause no Clothing Primarypart!")
+        end
+    else 
+        warn("Not Took Off Cause no Clothing!")
+    end
 end
 
 function EntityObject:LoadAnimation(name, animId)
@@ -113,16 +130,16 @@ function EntityObject:StopAnim(name)
 end
 
 function EntityObject:Destroy()
-    -- print("Destroy", self.Id)
+    -- print("EntityObject:Destroy()", self.Id)
     self.DoNotLoad = true
     self._Maid:Destroy()
-    self.Clothing:Destroy()
 end
 
 function EntityObject:Init()
     Maid = self.Shared.Maid
 
     CacheManager = self.Modules.Entity.CacheManager
+    AssetManager = self.Modules.Entity.AssetManager
 end 
 
 return EntityObject
