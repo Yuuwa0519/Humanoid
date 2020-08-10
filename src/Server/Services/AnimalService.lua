@@ -34,9 +34,9 @@ function AnimalService.Client:GetTotalNPC()
 end
 
 function AnimalService:Start()
-    -- self:ConnectClientEvent("SpawnNPC", function(plr)
-    --     self:SpawnNPC()
-    -- end)
+    self:ConnectClientEvent("SpawnNPC", function(plr)
+        self:SpawnNPC()
+    end)
 
     -- if (not RunService:IsStudio()) then --Studio Can't Handle So :P
     --     for i = 1, 400 do

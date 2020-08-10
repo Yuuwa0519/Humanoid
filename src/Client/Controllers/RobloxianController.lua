@@ -17,12 +17,30 @@ local EntityFolder
 
 local Camera = workspace.CurrentCamera
 
+--Var
+local HumDiedCon
+
 local RobloxianController = {}
 
-function RobloxianController:TellControl(moveVec, jump)
+function RobloxianController:GetHumanoid()
+    return MyHumanoid
+end
+
+function RobloxianController:Die()
+    if (MyHumanoid) then 
+        MyHumanoid.Char:Destroy()
+    end
+end
+
+function RobloxianController:TellControl(moveVec, jump, camLook)
     if (MyHumanoid) then 
         MyHumanoid:Move(moveVec)
 
+        if (camLook) then 
+            if (not MyHumanoid.AutoRotate) then
+                MyHumanoid:Face(camLook)
+            end
+        end
         if (jump) then 
             MyHumanoid:Jump()
         end
@@ -30,6 +48,15 @@ function RobloxianController:TellControl(moveVec, jump)
 end
 
 function RobloxianController:ConnectToChar()
+    if (HumDiedCon) then 
+        HumDiedCon:Disconnect()
+    end
+
+    if (MyHumanoid) then 
+        print("For Some Reason Previous Humanoid is Still Present...")
+        MyHumanoid:DeadSequence()
+    end
+
     local MyEntityId = RobloxianService:SpawnMe()
 
     if (MyEntityId) then 
@@ -40,7 +67,6 @@ function RobloxianController:ConnectToChar()
             local Actor = Entity.Actor
             
             if (Actor) then
-                local HumDiedCon
                 EntityController:AddForceRender(MyEntityId)
 
                 MyHumanoid = Humanoid.new(Actor, nil, {WalkSpeed = 120, Drag = 30})
@@ -49,6 +75,7 @@ function RobloxianController:ConnectToChar()
                     HumDiedCon:Disconnect()
                     self:ConnectToChar()
                 end)
+                MyHumanoid:SwitchRotateMode(true)
                 MyHumanoid:AddRayIgnore({EntityFolder})
                 -- MyHumanoid.AO.RigidityEnabled = true
                 MyHumanoid:Activate()

@@ -30,9 +30,7 @@ function RobloxianService:PlayAnimation(plr, animName)
 end
 
 function RobloxianService:SpawnPlr(plr)
-    if (Characters[plr]) then 
-        Characters[plr]:Destroy()
-    end
+    self:RemovePlr(plr)
 
     local newCharacter = self.Modules.Creature.Robloxian.new()
     newCharacter.Actor.Parent = workspace.Characters
@@ -44,6 +42,14 @@ function RobloxianService:SpawnPlr(plr)
     return Characters[plr].EntityId
 end
 
+function RobloxianService:RemovePlr(plr)
+    if (Characters[plr]) then 
+        Characters[plr]:Destroy()
+        wait(1)
+        print("1 Second. Did Entity Die? ")
+    end
+end
+
 function RobloxianService.Client:SpawnMe(...)
     return self.Server:SpawnPlr(...)
 end
@@ -52,6 +58,8 @@ function RobloxianService:Start()
     -- self:ConnectClientEvent("PlayAnimation", function(...)
     --     self:PlayAnimation(...)
     -- end)
+    Players.PlayerRemoving:Connect(function(...)
+    end)
 end
 
 function RobloxianService:Init()

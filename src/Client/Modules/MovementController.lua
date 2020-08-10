@@ -12,6 +12,8 @@ local RobloxianController
 --Obj
 local Camera = workspace.CurrentCamera
 
+local CurrentHumanoid = nil
+
 --Variable
 local MovementMap = {
     [Enum.KeyCode.W] = Vector3.new(0, 0, -1);
@@ -42,7 +44,8 @@ function MovementController:GetInput()
     local X, Y, Z = CameraCF:ToOrientation()
     local newCF = CFrame.Angles(0, Y, Z)
     local FinalVector = newCF:VectorToWorldSpace(totalVector)
-    RobloxianController:TellControl(FinalVector, isJump)
+
+    RobloxianController:TellControl(FinalVector, isJump, newCF.LookVector)
 end
 
 function MovementController:Deactivate()

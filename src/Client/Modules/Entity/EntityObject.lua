@@ -74,13 +74,19 @@ function EntityObject:WearCloth()
     end 
 
     --Set CFrame
-    self.Clothing:SetPrimaryPartCFrame(self.Actor:GetPrimaryPartCFrame():ToWorldSpace(self.ClothingCF))
-    self.Clothing.PrimaryPart.Anchored = false
-    self.Weld.Part1 = self.Actor.PrimaryPart
-    self.Actor.PrimaryPart.Transparency = 1
-    self.Clothing.Parent = EntityFolder
+    local ClothingExist = self.Clothing and self.Clothing.PrimaryPart
+    local ActorExist = self.Actor and self.Actor.PrimaryPart
+    if (ClothingExist and ActorExist) then
+        self.Clothing:SetPrimaryPartCFrame(self.Actor:GetPrimaryPartCFrame():ToWorldSpace(self.ClothingCF))
+        self.Clothing.PrimaryPart.Anchored = false
+        self.Weld.Part1 = self.Actor.PrimaryPart
+        self.Actor.PrimaryPart.Transparency = 1
+        self.Clothing.Parent = EntityFolder
 
-    self.Mounted = true
+        self.Mounted = true
+    else 
+        warn("Called Wear Cloth to Entity Without Cothing / PrimaryPart")
+    end
 
     -- print("#EntityFolder", #EntityFolder:GetChildren())
 end

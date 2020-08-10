@@ -32,7 +32,8 @@ function EntityService:AddEntity(Actor, BaseArray)
 
     AllEntities[Id] = newEntity
 
-    AncestryCon = Actor.AncestryChanged:Connect(function(old, new)
+    AncestryCon = Actor.AncestryChanged:Connect(function(_, new)
+        print("Ancestry Changed on Entity", new)
         if (new == nil) then 
             AncestryCon:Disconnect()
             self:RemoveEntity(Id)

@@ -40,6 +40,7 @@ function EntityController:GetEntityStats()
 end
 
 function EntityController:AddForceRender(Id)
+    print("New Force Render", Id)
     table.insert(ForceRender, Id)
 end
 
@@ -49,6 +50,7 @@ function EntityController:RemoveForceRender(Id)
         if (v == Id) then
             self.Shared.TableUtil.FastRemove(ForceRender, i)
             isExist = true
+            print("Removed Force Render", Id)
             break
         end
     end

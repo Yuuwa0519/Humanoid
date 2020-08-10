@@ -58,8 +58,6 @@ local Debris = game:GetService("Debris")
 local Maid
 local Event
 
---Var
-
 --Setting
 local Debug = false
 
@@ -136,6 +134,13 @@ function Humanoid.new(Character, RAttach, HumSettings)
 		Direction = Vector3.new(); --Move Direction
 		OrigDirection = Vector3.new(); --Original Move Direction, When Autorotate is True
 		GoalPos = Vector3.new(); --where to look if AutoRotate
+
+		GroundNormal = Vector3.new(0, 1, 0);
+		GroundFriction = 0;
+		GroundFrictionWeight = 0;
+		MyFriction = 0;
+		MyFrictionWeight = 0;
+
 		
 		DragForce = Drag;
 		WalkSpeed = WalkSpeed;
@@ -169,6 +174,7 @@ function Humanoid.new(Character, RAttach, HumSettings)
 	self._ObjMaid:GiveTask(self.Char)
 	self._ObjMaid:GiveTask(self.RotAttach)
 	self._ObjMaid:GiveTask(self.Char.AncestryChanged:Connect(function(_, new)
+		print("Changed Ancestry", new)
 		if (new == nil) then 
 			self:DeadSequence()
 		end
@@ -190,6 +196,16 @@ end
 
 function Humanoid:GetMass(considerGravity)
 	return considerGravity and self.Base:GetMass() * workspace.Gravity or self.Base:GetMass()
+end
+
+function Humanoid:SwitchRotateMode(autoRotate)
+	self.AutoRotate = not not autoRotate
+
+	if (self.AutoRotate) then
+		self.VF.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
+	else
+		self.VF.RelativeTo = Enum.ActuatorRelativeTo.World
+	end	
 end
 
 function Humanoid:Jump()
@@ -284,19 +300,90 @@ function Humanoid:FaceTo(TargCF)
 end
 
 function Humanoid:Calculate()
+	--Check Grounded
 	do 
 		local origin = self.BaseAttach.WorldCFrame:PointToWorldSpace(Vector3.new(0, -(self.Base.Size.Y / 2) + 0.1, 0))
-		local direction = Vector3.new(0, -1, 0)
+		local direction = Vector3.new(0, -10, 0)
 		local rayResult = workspace:Raycast(origin, direction, self.RayParam)
 
 		if (rayResult) then 
-			self.IsGrounded = true
+			if ((origin - rayResult.Position).Magnitude < 1) then
+				self.IsGrounded = true
+			else 
+				self.IsGrounded = false
+			end
+
+			self.GroundNormal = rayResult.Normal
+			
+			local groundObj = rayResult.Instance 
+
+			if (groundObj.CustomPhysicalProperties) then 
+				self.GroundFriction = groundObj.CustomPhysicalProperties.Friction
+				self.GroundFrictionWeight = groundObj.CustomPhysicalProperties.FrictionWeight
+			else 
+				local material = rayResult.Material 
+
+				--Define Friction from object material
+				local PhysicsProperty = PhysicalProperties.new(material)
+
+				if (PhysicsProperty) then 
+					self.GroundFriction = PhysicsProperty.Friction
+					self.GroundFrictionWeight = PhysicsProperty.FrictionWeight
+				else 
+					warn("No Physics Property")
+				end
+			end
 		else 
 			self.IsGrounded = false
+			self.GroundNormal = Vector3.new(0, 1, 0)
 		end
 	end
 
-	--Check Grounded
+	--Get Counter Force to Ground
+	local gravity = self:GetMass() * workspace.Gravity
+	local theta = Vector3.new(0, 1, 0):Dot(self.GroundNormal)
+
+	local right = Vector3.new(0, 1, 0):Cross(self.GroundNormal)
+	local planeCFrame = CFrame.fromMatrix(Vector3.new(), right, self.GroundNormal)
+	local planeDirection = planeCFrame.LookVector
+
+	--Test
+	-- do
+	-- 	local p = Instance.new("Part")
+	-- 	p.CFrame = planeCFrame
+	-- 	p.Position = workspace.PlayerSpawn.Position
+	-- 	p.FrontSurface = Enum.SurfaceType.Hinge
+	-- 	p.Size = Vector3.new(1, 1, 5)
+	-- 	p.Anchored = true
+	-- 	p.Parent = workspace.Entities
+	-- 	Debris:AddItem(p, 1)
+	-- end
+
+	--[[
+		Trig XD
+		(Gravitatioal Pull Perpendicular to Plane)
+		cos(angle) = perpendicularForce / Gravity
+		 perpendicularForce = cos(angle) * Gravity
+
+		(GravitationalPull Parallel to Plane)
+		sin(angle) = parallelForce / Gravity
+		parallelForce = sin(angle) * Gravity
+	]]
+	local forceParallel = math.sin(theta) * gravity
+
+	--Get Friction Between Surface and HumBase
+	--[[
+		FrictionFormlula
+
+		Fric AB = Fric A * FricWeightA + Fric B * FricWeightB 
+					---------------------------------------------
+							FricWeightA + FricWeightB
+	]]
+	local FrictionNumerator = self.MyFriction * self.MyFrictionWeight + self.GroundFriction * self.GroundFrictionWeight
+	local FrictionDenominator = self.MyFrictionWeight + self.GroundFrictionWeight
+
+	local Friction = FrictionNumerator / FrictionDenominator
+
 	--F = MA
 	--Drag = VC
 
@@ -307,7 +394,7 @@ function Humanoid:Calculate()
 
 	if (self.AutoRotate) then
 		vel = self.BaseAttach.WorldCFrame:VectorToObjectSpace(vel)
-
+		planeDirection = self.BaseAttach.WorldCFrame:VectorToObjectSpace(planeDirection)
 		--Rotate towards Goal
 		self:Face(self.OrigDirection)
 	end
@@ -315,19 +402,26 @@ function Humanoid:Calculate()
 
 	local Force = self:GetMass() * (self.Direction * self.WalkSpeed)
 	local Drag = vel * self.DragForce
-	local FinalForce = Force - Drag
 
-	self.VF.Force = FinalForce
+	local FinalForce = (Force - Drag) 
+	local FinalCounterForce = planeDirection * (forceParallel)
+
+	self.VF.Force = FinalForce + FinalCounterForce
+	-- print(FinalCounterForce)
 end
 
 function Humanoid:Activate()
 	if (not self.isLocked) then 
-		self.VF.Enabled = true
-		if (self.AutoRotate) then
-			self.VF.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
-		else
-			self.VF.RelativeTo = Enum.ActuatorRelativeTo.World
+		local PhysicsProperty = PhysicalProperties.new(self.Base.Material)
+
+		if (PhysicsProperty) then 
+			self.MyFriction = PhysicsProperty.Friction
+			self.MyFrictionWeight = PhysicsProperty.FrictionWeight
+		else 
+			warn("No My Physical Property")
 		end
+
+		self.VF.Enabled = true
 
 		self._Maid:GiveTask(RunService.Heartbeat:Connect(function()
 			self:Calculate()

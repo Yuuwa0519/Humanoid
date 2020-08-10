@@ -7,6 +7,9 @@ local CollectionService = game:GetService("CollectionService")
 local StarterGui = game:GetService("StarterGui")
 local RunService = game:GetService("RunService")
 
+--Obj
+local ResetBind = Instance.new("BindableEvent")
+
 --Var
 local PlayerGui
 local Main
@@ -16,6 +19,10 @@ local UIController = {}
 function UIController:GetMainUI()
     return Main
 end 
+
+function UIController:ResetCallback()
+    self.Controllers.RobloxianController:Die()
+end
 
 function UIController:Setup()
     local UICollection = CollectionService:GetTagged("UICollection")
@@ -28,9 +35,12 @@ function UIController:Setup()
 end
 
 function UIController:Start()
+    ResetBind.Event:Connect(function()
+        self:ResetCallback()
+    end)
     while (true) do 
         local s, e = pcall(function()
-            StarterGui:SetCore("ResetButtonCallback", false)
+            StarterGui:SetCore("ResetButtonCallback", ResetBind)
         end)
 
         if (s) then

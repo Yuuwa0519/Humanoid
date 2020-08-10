@@ -57,8 +57,8 @@ function CacheManager:CollectGarbage(camPos)
         local Id = Entity.Id
 
         if (not Entity.DoNotLoad) then 
-            if (Entity.Actor) then
-                if (Entity.Clothing) then 
+            if (Entity.Actor and Entity.Actor.PrimaryPart) then
+                if (Entity.Clothing and Entity.Clothing.PrimaryPart) then 
                     local dist = (Entity.Actor.PrimaryPart.Position - camPos).Magnitude
 
                     if (dist > self.Modules.Entity.EntitySettings.CacheRemoveDist) then 
